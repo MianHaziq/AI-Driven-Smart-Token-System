@@ -1,0 +1,345 @@
+{
+    "services": [
+        {
+            "id": "nadra",
+            "name": "NADRA Services",
+            "description": "National Database & Registration Authority",
+            "icon": "🪪",
+            "color": "bg-gradient-to-br from-blue-500 to-blue-600",
+            "subServices": [
+                {
+                    "id": "cnic-new",
+                    "name": "New CNIC",
+                    "description": "Apply for new National Identity Card",
+                    "duration": 15,
+                    "fee": 400
+                },
+                {
+                    "id": "cnic-renewal",
+                    "name": "CNIC Renewal",
+                    "description": "Renew expired identity card",
+                    "duration": 10,
+                    "fee": 400
+                },
+                {
+                    "id": "cnic-modification",
+                    "name": "CNIC Modification",
+                    "description": "Update personal information on CNIC",
+                    "duration": 15,
+                    "fee": 500
+                },
+                {
+                    "id": "family-registration",
+                    "name": "Family Registration Certificate",
+                    "description": "Get family registration document",
+                    "duration": 20,
+                    "fee": 600
+                },
+                {
+                    "id": "nicop",
+                    "name": "NICOP Application",
+                    "description": "National Identity Card for Overseas Pakistanis",
+                    "duration": 20,
+                    "fee": 3000
+                },
+                {
+                    "id": "poc",
+                    "name": "Pakistan Origin Card",
+                    "description": "Identity card for foreign nationals of Pakistani origin",
+                    "duration": 25,
+                    "fee": 5000
+                }
+            ]
+        },
+        {
+            "id": "passport",
+            "name": "Passport Office",
+            "description": "Directorate General of Immigration & Passports",
+            "icon": "📘",
+            "color": "bg-gradient-to-br from-green-500 to-green-600",
+            "subServices": [
+                {
+                    "id": "passport-new",
+                    "name": "New Passport (5 Years)",
+                    "description": "Apply for new Pakistani passport",
+                    "duration": 30,
+                    "fee": 3500
+                },
+                {
+                    "id": "passport-new-10",
+                    "name": "New Passport (10 Years)",
+                    "description": "Apply for 10-year validity passport",
+                    "duration": 30,
+                    "fee": 6500
+                },
+                {
+                    "id": "passport-renewal",
+                    "name": "Passport Renewal",
+                    "description": "Renew existing passport",
+                    "duration": 25,
+                    "fee": 3500
+                },
+                {
+                    "id": "passport-urgent",
+                    "name": "Urgent Passport",
+                    "description": "Fast-track passport processing",
+                    "duration": 20,
+                    "fee": 9000
+                },
+                {
+                    "id": "passport-lost",
+                    "name": "Lost Passport Replacement",
+                    "description": "Replace lost or stolen passport",
+                    "duration": 30,
+                    "fee": 5000
+                },
+                {
+                    "id": "child-passport",
+                    "name": "Child Passport",
+                    "description": "Passport application for minors",
+                    "duration": 25,
+                    "fee": 2500
+                }
+            ]
+        },
+        {
+            "id": "banks",
+            "name": "Banking Services",
+            "description": "Commercial Banks - HBL, UBL, MCB, Allied",
+            "icon": "🏦",
+            "color": "bg-gradient-to-br from-indigo-500 to-indigo-600",
+            "subServices": [
+                {
+                    "id": "account-opening",
+                    "name": "Account Opening",
+                    "description": "Open new savings or current account",
+                    "duration": 30,
+                    "fee": 0
+                },
+                {
+                    "id": "atm-card",
+                    "name": "ATM/Debit Card Issuance",
+                    "description": "Get new ATM or debit card",
+                    "duration": 15,
+                    "fee": 500
+                },
+                {
+                    "id": "cheque-book",
+                    "name": "Cheque Book Request",
+                    "description": "Request new cheque book",
+                    "duration": 10,
+                    "fee": 300
+                },
+                {
+                    "id": "bank-statement",
+                    "name": "Bank Statement",
+                    "description": "Get printed bank statement",
+                    "duration": 10,
+                    "fee": 200
+                },
+                {
+                    "id": "loan-inquiry",
+                    "name": "Loan Inquiry",
+                    "description": "Personal, car, or home loan consultation",
+                    "duration": 25,
+                    "fee": 0
+                },
+                {
+                    "id": "credit-card",
+                    "name": "Credit Card Application",
+                    "description": "Apply for new credit card",
+                    "duration": 20,
+                    "fee": 0
+                }
+            ]
+        },
+        {
+            "id": "hospitals",
+            "name": "Hospital Services",
+            "description": "Major Hospitals - Indus, Shaukat Khanum, Aga Khan",
+            "icon": "🏥",
+            "color": "bg-gradient-to-br from-red-500 to-red-600",
+            "subServices": [
+                {
+                    "id": "opd-general",
+                    "name": "General OPD",
+                    "description": "Outpatient Department - General consultation",
+                    "duration": 20,
+                    "fee": 500
+                },
+                {
+                    "id": "opd-cardiology",
+                    "name": "Cardiology OPD",
+                    "description": "Heart specialist consultation",
+                    "duration": 25,
+                    "fee": 1500
+                },
+                {
+                    "id": "opd-pediatrics",
+                    "name": "Pediatrics OPD",
+                    "description": "Children's health consultation",
+                    "duration": 20,
+                    "fee": 1000
+                },
+                {
+                    "id": "opd-gynecology",
+                    "name": "Gynecology & Obstetrics",
+                    "description": "Women's health and maternity services",
+                    "duration": 25,
+                    "fee": 1200
+                },
+                {
+                    "id": "emergency",
+                    "name": "Emergency Department",
+                    "description": "24/7 emergency medical services",
+                    "duration": 30,
+                    "fee": 2000
+                },
+                {
+                    "id": "lab-tests",
+                    "name": "Laboratory Tests",
+                    "description": "Blood tests, pathology, clinical diagnostics",
+                    "duration": 15,
+                    "fee": 800
+                },
+                {
+                    "id": "radiology",
+                    "name": "Radiology & Imaging",
+                    "description": "X-Ray, CT Scan, MRI, Ultrasound",
+                    "duration": 30,
+                    "fee": 3000
+                },
+                {
+                    "id": "opd-orthopedic",
+                    "name": "Orthopedic Services",
+                    "description": "Bone and joint specialist",
+                    "duration": 20,
+                    "fee": 1200
+                },
+                {
+                    "id": "opd-ent",
+                    "name": "ENT Services",
+                    "description": "Ear, Nose & Throat specialist",
+                    "duration": 20,
+                    "fee": 1000
+                },
+                {
+                    "id": "opd-dermatology",
+                    "name": "Dermatology",
+                    "description": "Skin and hair specialist",
+                    "duration": 20,
+                    "fee": 1200
+                }
+            ]
+        },
+        {
+            "id": "utilities",
+            "name": "Utility Centers",
+            "description": "Electricity & Gas - WAPDA, LESCO, Sui Gas",
+            "icon": "💡",
+            "color": "bg-gradient-to-br from-yellow-500 to-orange-500",
+            "subServices": [
+                {
+                    "id": "electric-new-connection",
+                    "name": "New Electricity Connection",
+                    "description": "Apply for new electric meter",
+                    "duration": 30,
+                    "fee": 5000
+                },
+                {
+                    "id": "electric-meter-change",
+                    "name": "Electric Meter Change",
+                    "description": "Request meter replacement",
+                    "duration": 20,
+                    "fee": 1000
+                },
+                {
+                    "id": "electric-load-extension",
+                    "name": "Load Extension",
+                    "description": "Increase electricity load capacity",
+                    "duration": 25,
+                    "fee": 3000
+                },
+                {
+                    "id": "electric-billing-complaint",
+                    "name": "Billing Complaint",
+                    "description": "Report incorrect electricity bill",
+                    "duration": 15,
+                    "fee": 0
+                },
+                {
+                    "id": "gas-new-connection",
+                    "name": "New Gas Connection",
+                    "description": "Apply for Sui Gas connection",
+                    "duration": 35,
+                    "fee": 8000
+                },
+                {
+                    "id": "gas-meter-change",
+                    "name": "Gas Meter Replacement",
+                    "description": "Replace faulty gas meter",
+                    "duration": 20,
+                    "fee": 1500
+                },
+                {
+                    "id": "gas-complaint",
+                    "name": "Gas Leakage Complaint",
+                    "description": "Report gas leak emergency",
+                    "duration": 10,
+                    "fee": 0
+                }
+            ]
+        },
+        {
+            "id": "excise",
+            "name": "Excise & Taxation",
+            "description": "Vehicle Registration & License Services",
+            "icon": "🚗",
+            "color": "bg-gradient-to-br from-amber-500 to-orange-600",
+            "subServices": [
+                {
+                    "id": "vehicle-registration",
+                    "name": "New Vehicle Registration",
+                    "description": "Register newly purchased vehicle",
+                    "duration": 45,
+                    "fee": 2000
+                },
+                {
+                    "id": "vehicle-transfer",
+                    "name": "Vehicle Transfer",
+                    "description": "Transfer vehicle ownership",
+                    "duration": 40,
+                    "fee": 1500
+                },
+                {
+                    "id": "driving-license-new",
+                    "name": "New Driving License",
+                    "description": "Apply for driving license",
+                    "duration": 30,
+                    "fee": 1200
+                },
+                {
+                    "id": "driving-license-renewal",
+                    "name": "Driving License Renewal",
+                    "description": "Renew expired license",
+                    "duration": 20,
+                    "fee": 800
+                },
+                {
+                    "id": "vehicle-token-tax",
+                    "name": "Vehicle Token Tax",
+                    "description": "Pay annual vehicle token tax",
+                    "duration": 15,
+                    "fee": 0
+                },
+                {
+                    "id": "duplicate-registration",
+                    "name": "Duplicate Registration Book",
+                    "description": "Get duplicate vehicle documents",
+                    "duration": 25,
+                    "fee": 1000
+                }
+            ]
+        }
+    ]
+}

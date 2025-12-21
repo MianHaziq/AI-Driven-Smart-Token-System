@@ -9,14 +9,19 @@ import {
   FiArrowRight,
   FiArrowLeft,
   FiSearch,
+  FiPhone,
 } from 'react-icons/fi';
 import { Button, Card, Badge, SearchBar, Alert } from '../../components/common';
 import { ROUTES } from '../../utils/constants';
 import { formatDuration } from '../../utils/helpers';
+import centersData from '../../data/centers.json';
+import useAuthStore from '../../store/authStore';
+import toast from 'react-hot-toast';
 
 const BookToken = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAuthenticated } = useAuthStore();
 
   // Get pre-selected service from Services page navigation
   const preSelectedService = location.state;
@@ -27,109 +32,46 @@ const BookToken = () => {
   const [loading, setLoading] = useState(false);
   const [bookedToken, setBookedToken] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [centers, setCenters] = useState([]);
 
-  // Mock data - service centers with their service categories
-  const serviceCenters = [
-    {
-      id: '1',
-      name: 'NADRA Office - F-6',
-      address: 'F-6 Markaz, Islamabad',
-      type: 'government',
-      serviceCategory: 'nadra',
-      queueLength: 12,
-      avgWaitTime: 25,
-      distance: 2.5,
+  useEffect(() => {
+    // Load centers from JSON and add dynamic queue data
+    const loadedCenters = centersData.centers.map(center => ({
+      ...center,
+      queueLength: Math.floor(Math.random() * 30) + 5,
+      avgWaitTime: Math.floor(Math.random() * 50) + 15,
+      distance: (Math.random() * 10 + 1).toFixed(1),
       isOpen: true,
-    },
-    {
-      id: '2',
-      name: 'NADRA Office - G-9',
-      address: 'G-9 Markaz, Islamabad',
-      type: 'government',
-      serviceCategory: 'nadra',
-      queueLength: 18,
-      avgWaitTime: 35,
-      distance: 4.1,
-      isOpen: true,
-    },
-    {
-      id: '3',
-      name: 'Passport Office - Islamabad',
-      address: 'G-9, Islamabad',
-      type: 'government',
-      serviceCategory: 'passport',
-      queueLength: 28,
-      avgWaitTime: 45,
-      distance: 5.2,
-      isOpen: true,
-    },
-    {
-      id: '4',
-      name: 'Passport Office - Rawalpindi',
-      address: 'Saddar, Rawalpindi',
-      type: 'government',
-      serviceCategory: 'passport',
-      queueLength: 42,
-      avgWaitTime: 60,
-      distance: 12.5,
-      isOpen: true,
-    },
-    {
-      id: '5',
-      name: 'Excise & Taxation - Islamabad',
-      address: 'Blue Area, Islamabad',
-      type: 'government',
-      serviceCategory: 'excise',
-      queueLength: 22,
-      avgWaitTime: 40,
-      distance: 3.8,
-      isOpen: true,
-    },
-    {
-      id: '6',
-      name: 'LESCO Office - F-10',
-      address: 'F-10 Markaz, Islamabad',
-      type: 'utility',
-      serviceCategory: 'electricity',
-      queueLength: 15,
-      avgWaitTime: 30,
-      distance: 6.2,
-      isOpen: true,
-    },
-    {
-      id: '7',
-      name: 'Sui Gas Office - G-11',
-      address: 'G-11 Markaz, Islamabad',
-      type: 'utility',
-      serviceCategory: 'sui-gas',
-      queueLength: 8,
-      avgWaitTime: 20,
-      distance: 5.5,
-      isOpen: true,
-    },
-    {
-      id: '8',
-      name: 'HBL Bank - Blue Area',
-      address: 'Blue Area, Islamabad',
-      type: 'bank',
-      serviceCategory: 'banks',
-      queueLength: 8,
-      avgWaitTime: 15,
-      distance: 3.1,
-      isOpen: true,
-    },
-    {
-      id: '9',
-      name: 'UBL Bank - F-7',
-      address: 'F-7 Markaz, Islamabad',
-      type: 'bank',
-      serviceCategory: 'banks',
-      queueLength: 5,
-      avgWaitTime: 12,
-      distance: 4.2,
-      isOpen: true,
-    },
-  ];
+      type: getTypeFromCategory(center.serviceCategory),
+    }));
+    setCenters(loadedCenters);
+  }, []);
+
+  // Check for pending booking on return from login
+  useEffect(() => {
+    const pendingBooking = localStorage.getItem('pendingBooking');
+    if (pendingBooking && isAuthenticated && location.state?.resumeBooking) {
+      const booking = JSON.parse(pendingBooking);
+      setSelectedCenter(booking.center);
+      setSelectedService(booking.service);
+      setStep(3);
+      localStorage.removeItem('pendingBooking');
+      toast.success('Welcome back! Complete your booking below.');
+    }
+  }, [isAuthenticated, location.state]);
+
+  // Helper function to determine type from serviceCategory
+  const getTypeFromCategory = (category) => {
+    const categoryMapping = {
+      'nadra': 'government',
+      'passport': 'government',
+      'excise': 'government',
+      'banks': 'bank',
+      'utilities': 'utility',
+      'hospitals': 'hospital',
+    };
+    return categoryMapping[category] || 'other';
+  };
 
   // Services by category (serviceCategory)
   const servicesByCategory = {
@@ -178,7 +120,7 @@ const BookToken = () => {
   };
 
   // Filter centers based on search and pre-selected service
-  const filteredCenters = serviceCenters.filter((center) => {
+  const filteredCenters = centers.filter((center) => {
     const matchesSearch = center.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       center.address.toLowerCase().includes(searchQuery.toLowerCase());
 
@@ -214,12 +156,33 @@ const BookToken = () => {
 
   // Clear location state to prevent persistence issues on navigation
   useEffect(() => {
-    if (location.state) {
+    if (location.state && !location.state.resumeBooking) {
       window.history.replaceState({}, document.title);
     }
   }, []);
 
   const handleConfirmBooking = async () => {
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      // Save booking details to localStorage for resuming after login
+      localStorage.setItem('pendingBooking', JSON.stringify({
+        center: selectedCenter,
+        service: selectedService,
+      }));
+
+      toast.info('Please login to complete your booking');
+
+      // Redirect to login with return information
+      navigate(ROUTES.LOGIN, {
+        state: {
+          from: ROUTES.BOOK_TOKEN,
+          message: 'Login required to book token'
+        }
+      });
+      return;
+    }
+
+    // User is authenticated - proceed with booking
     setLoading(true);
     try {
       // Simulate API call
@@ -239,6 +202,7 @@ const BookToken = () => {
       setStep(4);
     } catch (err) {
       console.error(err);
+      toast.error('Booking failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -261,10 +225,9 @@ const BookToken = () => {
               <div
                 className={`
                   w-10 h-10 rounded-full flex items-center justify-center font-semibold
-                  ${
-                    step >= s.num
-                      ? 'bg-pakistan-green text-white'
-                      : 'bg-gray-200 text-gray-500'
+                  ${step >= s.num
+                    ? 'bg-pakistan-green text-white'
+                    : 'bg-gray-200 text-gray-500'
                   }
                 `}
               >
@@ -285,9 +248,8 @@ const BookToken = () => {
           {steps.map((s) => (
             <span
               key={s.num}
-              className={`text-xs sm:text-sm ${
-                step >= s.num ? 'text-pakistan-green font-medium' : 'text-gray-500'
-              }`}
+              className={`text-xs sm:text-sm ${step >= s.num ? 'text-pakistan-green font-medium' : 'text-gray-500'
+                }`}
             >
               {s.label}
             </span>
@@ -340,10 +302,9 @@ const BookToken = () => {
                     className={`
                       !p-4 border rounded-xl cursor-pointer transition-all
                       hover:border-pakistan-green hover:shadow-md
-                      ${
-                        selectedCenter?.id === center.id
-                          ? 'border-pakistan-green bg-pakistan-green-50'
-                          : 'border-gray-200'
+                      ${selectedCenter?.id === center.id
+                        ? 'border-pakistan-green bg-pakistan-green-50'
+                        : 'border-gray-200'
                       }
                     `}
                   >
@@ -374,6 +335,18 @@ const BookToken = () => {
                         {center.distance} km away
                       </span>
                     </div>
+                    {center.phone && (
+                      <p className="text-xs text-gray-500 !mt-2 flex items-center">
+                        <FiPhone className="w-3 h-3 !mr-1" />
+                        {center.phone}
+                      </p>
+                    )}
+                    {center.hours && (
+                      <p className="text-xs text-gray-500 !mt-1 flex items-center">
+                        <FiClock className="w-3 h-3 !mr-1" />
+                        {center.hours}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -414,10 +387,9 @@ const BookToken = () => {
                     className={`
                       !p-4 border rounded-xl cursor-pointer transition-all
                       hover:border-pakistan-green hover:shadow-md
-                      ${
-                        selectedService?.id === service.id
-                          ? 'border-pakistan-green bg-pakistan-green-50'
-                          : 'border-gray-200'
+                      ${selectedService?.id === service.id
+                        ? 'border-pakistan-green bg-pakistan-green-50'
+                        : 'border-gray-200'
                       }
                     `}
                   >

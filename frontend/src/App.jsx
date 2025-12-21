@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import useAuthStore from './store/authStore';
 
 // Layouts
 import PublicLayout from './layouts/PublicLayout';
@@ -15,12 +17,12 @@ import {
   ForgotPassword,
   About,
   Contact,
+  Services,
 } from './pages/public';
 
 // Customer Pages
 import {
   Dashboard as CustomerDashboard,
-  Services,
   BookToken,
   MyTokens,
   Profile as CustomerProfile,
@@ -36,22 +38,13 @@ import {
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  // TODO: Replace with actual auth check from Zustand store
-  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-  const userRole = localStorage.getItem('userRole') || 'customer';
-
-  // TEMPORARY: Bypass auth for development - remove when backend is ready
-  const BYPASS_AUTH = true;
-  if (BYPASS_AUTH) {
-    return children;
-  }
-  // END TEMPORARY
+  const { isAuthenticated, user } = useAuthStore();
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(userRole)) {
+  if (allowedRoles && !allowedRoles.includes(user?.role)) {
     return <Navigate to="/" replace />;
   }
 
@@ -60,12 +53,11 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
 // Public Route Component (redirect if already logged in)
 const PublicRoute = ({ children, restricted = false }) => {
-  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-  const userRole = localStorage.getItem('userRole') || 'customer';
+  const { isAuthenticated, user } = useAuthStore();
 
   if (isAuthenticated && restricted) {
     // Redirect based on role
-    if (userRole === 'admin' || userRole === 'superadmin') {
+    if (user?.role === 'admin') {
       return <Navigate to="/admin/dashboard" replace />;
     }
     return <Navigate to="/customer/dashboard" replace />;
@@ -75,6 +67,12 @@ const PublicRoute = ({ children, restricted = false }) => {
 };
 
 function App() {
+  const initialize = useAuthStore((state) => state.initialize);
+
+  // Initialize auth state on mount
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
   return (
     <Router>
       {/* Toast Notifications */}
@@ -109,7 +107,9 @@ function App() {
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Landing />} />
           <Route path="/about" element={<About />} />
+          <Route path="/services" element={<Services />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/book-token" element={<BookToken />} />
         </Route>
 
         {/* Auth Routes with AuthLayout */}
@@ -149,8 +149,6 @@ function App() {
           }
         >
           <Route path="/customer/dashboard" element={<CustomerDashboard />} />
-          <Route path="/customer/services" element={<Services />} />
-          <Route path="/customer/book-token" element={<BookToken />} />
           <Route path="/customer/my-tokens" element={<MyTokens />} />
           <Route path="/customer/profile" element={<CustomerProfile />} />
           <Route path="/token/:id" element={<TokenDetails />} />

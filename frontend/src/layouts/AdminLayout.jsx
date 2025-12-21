@@ -3,13 +3,15 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { FiMenu, FiBell, FiSearch } from 'react-icons/fi';
 import { Sidebar, SearchBar } from '../components/common';
 import { ROUTES } from '../utils/constants';
+import useAuthStore from '../store/authStore';
 
-const AdminLayout = ({ user, onLogout }) => {
+const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
+  const { user, logout } = useAuthStore();
 
   const handleLogout = () => {
-    if (onLogout) onLogout();
+    logout();
     navigate(ROUTES.LOGIN);
   };
 
@@ -20,7 +22,6 @@ const AdminLayout = ({ user, onLogout }) => {
         <Sidebar
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
-          user={user}
           onLogout={handleLogout}
         />
 
@@ -54,7 +55,7 @@ const AdminLayout = ({ user, onLogout }) => {
                 <div className="flex items-center !space-x-3 !pl-3 border-l border-gray-200">
                   <div className="text-right hidden sm:block">
                     <p className="text-sm font-medium text-gray-900">
-                      {user?.name || 'Admin'}
+                      {user?.fullName || 'Admin'}
                     </p>
                     <p className="text-xs text-gray-500 capitalize">
                       {user?.role || 'Administrator'}
@@ -62,7 +63,7 @@ const AdminLayout = ({ user, onLogout }) => {
                   </div>
                   <div className="w-10 h-10 rounded-full bg-pakistan-green flex items-center justify-center">
                     <span className="text-white font-semibold">
-                      {user?.name?.charAt(0).toUpperCase() || 'A'}
+                      {user?.fullName?.charAt(0).toUpperCase() || 'A'}
                     </span>
                   </div>
                 </div>

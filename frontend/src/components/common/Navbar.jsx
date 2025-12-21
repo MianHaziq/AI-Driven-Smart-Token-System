@@ -23,6 +23,7 @@ import {
   FiClock,
 } from 'react-icons/fi';
 import { ROUTES, APP_NAME, SERVICES } from '../../utils/constants';
+import useAuthStore from '../../store/authStore';
 
 // Icon mapping for services
 const serviceIconMap = {
@@ -34,7 +35,7 @@ const serviceIconMap = {
   FiDollarSign: FiDollarSign,
 };
 
-const Navbar = ({ user, onLogout }) => {
+const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isServicesOpen, setIsServicesOpen] = useState(false);
@@ -42,6 +43,7 @@ const Navbar = ({ user, onLogout }) => {
   const [mobileServiceExpanded, setMobileServiceExpanded] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, logout } = useAuthStore();
 
   const publicLinks = [
     { path: ROUTES.HOME, label: 'Home', icon: FiHome },
@@ -68,7 +70,7 @@ const Navbar = ({ user, onLogout }) => {
   };
 
   const handleLogout = () => {
-    if (onLogout) onLogout();
+    logout();
     setIsProfileOpen(false);
     navigate(ROUTES.LOGIN);
   };
@@ -102,10 +104,9 @@ const Navbar = ({ user, onLogout }) => {
                 to={link.path}
                 className={`
                   !px-4 !py-2 rounded-lg text-sm font-medium transition-colors
-                  ${
-                    isActive(link.path)
-                      ? 'bg-pakistan-green !text-white'
-                      : 'text-gray-600 hover:text-pakistan-green hover:bg-pakistan-green-50'
+                  ${isActive(link.path)
+                    ? 'bg-pakistan-green !text-white'
+                    : 'text-gray-600 hover:text-pakistan-green hover:bg-pakistan-green-50'
                   }
                 `}
               >
@@ -125,19 +126,17 @@ const Navbar = ({ user, onLogout }) => {
               <button
                 className={`
                   flex items-center !px-4 !py-2 rounded-lg text-sm font-medium transition-colors
-                  ${
-                    isServicesOpen
-                      ? 'bg-pakistan-green !text-white'
-                      : 'text-gray-600 hover:text-pakistan-green hover:bg-pakistan-green-50'
+                  ${isServicesOpen
+                    ? 'bg-pakistan-green !text-white'
+                    : 'text-gray-600 hover:text-pakistan-green hover:bg-pakistan-green-50'
                   }
                 `}
               >
                 <FiGrid className="w-4 h-4 !mr-2" />
                 Services
                 <FiChevronDown
-                  className={`w-4 h-4 !ml-1 transition-transform ${
-                    isServicesOpen ? 'rotate-180' : ''
-                  }`}
+                  className={`w-4 h-4 !ml-1 transition-transform ${isServicesOpen ? 'rotate-180' : ''
+                    }`}
                 />
               </button>
 
@@ -164,29 +163,26 @@ const Navbar = ({ user, onLogout }) => {
                               onMouseEnter={() => setActiveService(service)}
                               className={`
                                 flex items-center !px-3 !py-2.5 rounded-lg cursor-pointer transition-colors
-                                ${
-                                  activeService?.id === service.id
-                                    ? 'bg-pakistan-green text-white'
-                                    : 'text-gray-700 hover:bg-gray-100'
+                                ${activeService?.id === service.id
+                                  ? 'bg-pakistan-green text-white'
+                                  : 'text-gray-700 hover:bg-gray-100'
                                 }
                               `}
                             >
                               <div
                                 className={`
                                   w-8 h-8 rounded-lg flex items-center justify-center !mr-3
-                                  ${
-                                    activeService?.id === service.id
-                                      ? 'bg-white/20'
-                                      : service.color
+                                  ${activeService?.id === service.id
+                                    ? 'bg-white/20'
+                                    : service.color
                                   }
                                 `}
                               >
                                 <IconComponent
-                                  className={`w-4 h-4 ${
-                                    activeService?.id === service.id
+                                  className={`w-4 h-4 ${activeService?.id === service.id
                                       ? 'text-white'
                                       : 'text-white'
-                                  }`}
+                                    }`}
                                 />
                               </div>
                               <div className="flex-1">
@@ -273,12 +269,11 @@ const Navbar = ({ user, onLogout }) => {
                       <FiUser className="w-4 h-4 text-pakistan-green" />
                     </div>
                     <span className="hidden sm:block text-sm font-medium text-gray-700">
-                      {user.name?.split(' ')[0]}
+                      {user.fullName?.split(' ')[0]}
                     </span>
                     <FiChevronDown
-                      className={`w-4 h-4 text-gray-500 transition-transform ${
-                        isProfileOpen ? 'rotate-180' : ''
-                      }`}
+                      className={`w-4 h-4 text-gray-500 transition-transform ${isProfileOpen ? 'rotate-180' : ''
+                        }`}
                     />
                   </button>
 
@@ -292,7 +287,7 @@ const Navbar = ({ user, onLogout }) => {
                       >
                         <div className="!px-4 !py-3 border-b border-gray-100">
                           <p className="text-sm font-medium text-gray-900">
-                            {user.name}
+                            {user.fullName}
                           </p>
                           <p className="text-xs text-gray-500">{user.email}</p>
                         </div>
@@ -374,10 +369,9 @@ const Navbar = ({ user, onLogout }) => {
                   onClick={() => setIsMenuOpen(false)}
                   className={`
                     flex items-center !px-4 !py-3 rounded-lg text-sm font-medium transition-colors
-                    ${
-                      isActive(link.path)
-                        ? 'bg-pakistan-green text-white'
-                        : 'text-gray-600 hover:bg-gray-50'
+                    ${isActive(link.path)
+                      ? 'bg-pakistan-green text-white'
+                      : 'text-gray-600 hover:bg-gray-50'
                     }
                   `}
                 >
@@ -411,9 +405,8 @@ const Navbar = ({ user, onLogout }) => {
                           {service.name}
                         </div>
                         <FiChevronDown
-                          className={`w-4 h-4 transition-transform ${
-                            isExpanded ? 'rotate-180' : ''
-                          }`}
+                          className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''
+                            }`}
                         />
                       </button>
 

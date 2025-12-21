@@ -1,10 +1,10 @@
 import { Outlet } from 'react-router-dom';
 import { Navbar, Footer } from '../components/common';
 
-const PublicLayout = ({ user, onLogout }) => {
+const PublicLayout = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar user={user} onLogout={onLogout} />
+      <Navbar />
       <main className="flex-1">
         <Outlet />
       </main>

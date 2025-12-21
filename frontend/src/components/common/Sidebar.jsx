@@ -13,9 +13,11 @@ import {
   FiX,
 } from 'react-icons/fi';
 import { ROUTES, APP_NAME } from '../../utils/constants';
+import useAuthStore from '../../store/authStore';
 
-const Sidebar = ({ isOpen, onClose, user, onLogout }) => {
+const Sidebar = ({ isOpen, onClose, onLogout }) => {
   const location = useLocation();
+  const { user } = useAuthStore();
 
   const adminLinks = [
     { path: ROUTES.ADMIN_DASHBOARD, label: 'Dashboard', icon: FiHome },
@@ -90,11 +92,11 @@ const Sidebar = ({ isOpen, onClose, user, onLogout }) => {
             <div className="flex items-center !space-x-3">
               <div className="w-10 h-10 rounded-full bg-pakistan-green-50 flex items-center justify-center">
                 <span className="text-pakistan-green font-semibold">
-                  {user.name?.charAt(0).toUpperCase()}
+                  {user.fullName?.charAt(0).toUpperCase()}
                 </span>
               </div>
               <div>
-                <p className="font-medium text-gray-900">{user.name}</p>
+                <p className="font-medium text-gray-900">{user.fullName}</p>
                 <p className="text-xs text-gray-500 capitalize">{user.role}</p>
               </div>
             </div>
@@ -110,10 +112,9 @@ const Sidebar = ({ isOpen, onClose, user, onLogout }) => {
               onClick={onClose}
               className={`
                 flex items-center !px-4 !py-3 rounded-lg text-sm font-medium transition-all duration-200
-                ${
-                  isActive(link.path)
-                    ? 'bg-pakistan-green text-white shadow-md'
-                    : 'text-gray-600 hover:bg-pakistan-green-50 hover:text-pakistan-green'
+                ${isActive(link.path)
+                  ? 'bg-pakistan-green text-white shadow-md'
+                  : 'text-gray-600 hover:bg-pakistan-green-50 hover:text-pakistan-green'
                 }
               `}
             >

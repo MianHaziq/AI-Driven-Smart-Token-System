@@ -4,11 +4,13 @@ import { useForm } from 'react-hook-form';
 import { FiMail, FiLock, FiArrowRight } from 'react-icons/fi';
 import { Button, Input, Alert } from '../../components/common';
 import { ROUTES } from '../../utils/constants';
+import useAuthStore from '../../store/authStore';
 
-const Login = ({ onLogin }) => {
+const Login = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const login = useAuthStore((state) => state.login);
 
   const {
     register,
@@ -21,29 +23,32 @@ const Login = ({ onLogin }) => {
     setError('');
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const result = await login(data.email, data.password);
 
-      // Mock login - in real app, this would call the API
-      const mockUser = {
-        id: '1',
-        name: 'Ahmed Khan',
-        email: data.email,
-        role: data.email.includes('admin') ? 'admin' : 'customer',
-      };
+      if (result.success) {
+        // Check for pending booking
+        const pendingBooking = localStorage.getItem('pendingBooking');
+        const from = location.state?.from;
 
-      if (onLogin) {
-        onLogin(mockUser);
-      }
+        if (pendingBooking && from === ROUTES.BOOK_TOKEN) {
+          // User came from book-token page, redirect back to complete booking
+          navigate(ROUTES.BOOK_TOKEN, {
+            state: { resumeBooking: true }
+          });
+          return;
+        }
 
-      // Redirect based on role
-      if (mockUser.role === 'admin') {
-        navigate(ROUTES.ADMIN_DASHBOARD);
+        // Normal role-based redirection
+        if (result.user.role === 'admin') {
+          navigate(ROUTES.ADMIN_DASHBOARD);
+        } else {
+          navigate(ROUTES.CUSTOMER_DASHBOARD);
+        }
       } else {
-        navigate(ROUTES.CUSTOMER_DASHBOARD);
+        setError(result.message);
       }
     } catch (err) {
-      setError('Invalid email or password. Please try again.');
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }

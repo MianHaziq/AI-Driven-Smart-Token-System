@@ -1,0 +1,693 @@
+{
+    "centers": [
+        {
+            "id": "nadra-islamabad-blue-area",
+            "name": "NADRA Mega Centre Blue Area",
+            "serviceCategory": "nadra",
+            "city": "Islamabad",
+            "address": "109 Jinnah Ave, Block I G 7/2 Blue Area, Islamabad",
+            "phone": "051-111-786-100",
+            "hours": "24/7",
+            "coordinates": {
+                "lat": 33.7073,
+                "lng": 73.0564
+            }
+        },
+        {
+            "id": "nadra-islamabad-g10",
+            "name": "NADRA Regional Office G-10",
+            "serviceCategory": "nadra",
+            "city": "Islamabad",
+            "address": "Mauve Area, Plot #30, Sector G-10/4, Islamabad",
+            "phone": "051-111-786-100",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 33.6912,
+                "lng": 73.0319
+            }
+        },
+        {
+            "id": "nadra-karachi-north-nazimabad",
+            "name": "NADRA Mega Centre North Nazimabad",
+            "serviceCategory": "nadra",
+            "city": "Karachi",
+            "address": "Plot No D15/1, Euro Twin Tower, Block L, North Nazimabad Town, Karachi",
+            "phone": "021-111-786-100",
+            "hours": "24/7",
+            "coordinates": {
+                "lat": 24.9262,
+                "lng": 67.0351
+            }
+        },
+        {
+            "id": "nadra-karachi-dha",
+            "name": "NADRA Mega Centre DHA",
+            "serviceCategory": "nadra",
+            "city": "Karachi",
+            "address": "Service Road, 18th East Street, Phase 1, DHA, Karachi",
+            "phone": "021-111-786-100",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 24.8248,
+                "lng": 67.0657
+            }
+        },
+        {
+            "id": "nadra-lahore-johar-town",
+            "name": "NADRA Regional Office Johar Town",
+            "serviceCategory": "nadra",
+            "city": "Lahore",
+            "address": "73, Trade Centre, Johar Town, Lahore",
+            "phone": "042-111-786-100",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 31.4697,
+                "lng": 74.2728
+            }
+        },
+        {
+            "id": "nadra-lahore-dha",
+            "name": "NADRA Executive Office DHA",
+            "serviceCategory": "nadra",
+            "city": "Lahore",
+            "address": "124-G, DHA Phase 1, Lahore",
+            "phone": "042-111-786-100",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 31.4772,
+                "lng": 74.4046
+            }
+        },
+        {
+            "id": "nadra-rawalpindi-sattelite",
+            "name": "NADRA Mega Center Rehmanabad",
+            "serviceCategory": "nadra",
+            "city": "Rawalpindi",
+            "address": "Service Rd S, A Block, Satellite Town, Rawalpindi",
+            "phone": "051-111-786-100",
+            "hours": "24/7",
+            "coordinates": {
+                "lat": 33.6101,
+                "lng": 73.0701
+            }
+        },
+        {
+            "id": "passport-islamabad-g10",
+            "name": "Regional Passport Office G-10",
+            "serviceCategory": "passport",
+            "city": "Islamabad",
+            "address": "13-C, Al-Hussain Plaza, G-10 Markaz, Islamabad",
+            "phone": "051-111-344-777",
+            "hours": "24/7",
+            "coordinates": {
+                "lat": 33.6912,
+                "lng": 73.0319
+            }
+        },
+        {
+            "id": "passport-islamabad-blue-area",
+            "name": "Executive Passport Office Blue Area",
+            "serviceCategory": "passport",
+            "city": "Islamabad",
+            "address": "Plot 19-A, Ground Floor, Pak Plaza, Fazal-e-Haq Road, Blue Area",
+            "phone": "051-111-344-777",
+            "hours": "9:00 AM - 2:00 PM",
+            "coordinates": {
+                "lat": 33.7073,
+                "lng": 73.0564
+            }
+        },
+        {
+            "id": "passport-karachi-saddar",
+            "name": "Regional Passport Office Saddar",
+            "serviceCategory": "passport",
+            "city": "Karachi",
+            "address": "Shahrah-e-Iraq, Saddar, Karachi",
+            "phone": "021-111-344-777",
+            "hours": "9:00 AM - 2:00 PM",
+            "coordinates": {
+                "lat": 24.8543,
+                "lng": 67.0232
+            }
+        },
+        {
+            "id": "passport-karachi-awami-markaz",
+            "name": "Regional Passport Office Awami Markaz",
+            "serviceCategory": "passport",
+            "city": "Karachi",
+            "address": "1st Floor, EOBI House, Shahrah-e-Faisal, Karachi",
+            "phone": "021-111-344-777",
+            "hours": "24/7",
+            "coordinates": {
+                "lat": 24.8796,
+                "lng": 67.0714
+            }
+        },
+        {
+            "id": "passport-lahore-garden-town",
+            "name": "Regional Passport Office Garden Town",
+            "serviceCategory": "passport",
+            "city": "Lahore",
+            "address": "4-A, Sher Shah Block, Behind Barkat Market, New Garden Town, Lahore",
+            "phone": "042-111-344-777",
+            "hours": "24/7",
+            "coordinates": {
+                "lat": 31.5017,
+                "lng": 74.3260
+            }
+        },
+        {
+            "id": "passport-lahore-dha",
+            "name": "Executive Passport Office DHA",
+            "serviceCategory": "passport",
+            "city": "Lahore",
+            "address": "27-XX Phase 3, Khayaban-e-Iqbal Road, DHA, Lahore",
+            "phone": "042-111-344-777",
+            "hours": "9:00 AM - 2:00 PM",
+            "coordinates": {
+                "lat": 31.4772,
+                "lng": 74.4046
+            }
+        },
+        {
+            "id": "passport-rawalpindi-gunj-mandi",
+            "name": "Regional Passport Office Gunj Mandi",
+            "serviceCategory": "passport",
+            "city": "Rawalpindi",
+            "address": "Railway Workshop Road, Gunj Mandi, Rawalpindi",
+            "phone": "051-111-344-777",
+            "hours": "9:00 AM - 2:00 PM",
+            "coordinates": {
+                "lat": 33.6007,
+                "lng": 73.0679
+            }
+        },
+        {
+            "id": "hbl-islamabad-blue-area",
+            "name": "HBL Corporate Branch Blue Area",
+            "serviceCategory": "banks",
+            "city": "Islamabad",
+            "address": "G/Mezzanine Floor, H.B. Tower, Jinnah Avenue, Blue Area, Islamabad",
+            "phone": "051-111-111-425",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 33.7073,
+                "lng": 73.0564
+            }
+        },
+        {
+            "id": "hbl-islamabad-f10",
+            "name": "HBL F-10 Markaz",
+            "serviceCategory": "banks",
+            "city": "Islamabad",
+            "address": "F-10 Markaz, Islamabad",
+            "phone": "051-111-111-425",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 33.6981,
+                "lng": 73.0197
+            }
+        },
+        {
+            "id": "hbl-karachi-ii-chundrigar",
+            "name": "HBL Plaza I.I. Chundrigar Road",
+            "serviceCategory": "banks",
+            "city": "Karachi",
+            "address": "I.I. Chundrigar Road, Karachi",
+            "phone": "021-111-111-425",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 24.8474,
+                "lng": 67.0196
+            }
+        },
+        {
+            "id": "hbl-karachi-clifton",
+            "name": "HBL Clifton Branch",
+            "serviceCategory": "banks",
+            "city": "Karachi",
+            "address": "F-101/5 Block-7, Clifton, Karachi",
+            "phone": "021-111-111-425",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 24.8127,
+                "lng": 67.0266
+            }
+        },
+        {
+            "id": "hbl-lahore-mall-road",
+            "name": "HBL Bank Square Mall Road",
+            "serviceCategory": "banks",
+            "city": "Lahore",
+            "address": "Shaharah-e-Quaid-i-Azam, The Mall, Lahore",
+            "phone": "042-111-111-425",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 31.5673,
+                "lng": 74.3104
+            }
+        },
+        {
+            "id": "hbl-lahore-gulberg",
+            "name": "HBL Main Market Gulberg",
+            "serviceCategory": "banks",
+            "city": "Lahore",
+            "address": "Main Market, Gulberg, Lahore",
+            "phone": "042-111-111-425",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 31.5087,
+                "lng": 74.3506
+            }
+        },
+        {
+            "id": "ubl-islamabad-blue-area",
+            "name": "UBL Corporate Center Blue Area",
+            "serviceCategory": "banks",
+            "city": "Islamabad",
+            "address": "Plot No. 2-F-6/G-6, UBL Building, Jinnah Avenue, Blue Area, Islamabad",
+            "phone": "051-111-825-888",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 33.7073,
+                "lng": 73.0564
+            }
+        },
+        {
+            "id": "ubl-karachi-bundar-road",
+            "name": "UBL Bunder Road Branch",
+            "serviceCategory": "banks",
+            "city": "Karachi",
+            "address": "Central Bank of India Building, Bunder Road, Karachi",
+            "phone": "021-111-825-888",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 24.8606,
+                "lng": 67.0099
+            }
+        },
+        {
+            "id": "ubl-lahore-mm-alam",
+            "name": "UBL Corporate Branch M.M. Alam Road",
+            "serviceCategory": "banks",
+            "city": "Lahore",
+            "address": "P-115, M.M. Alam Road, Gulberg, Lahore",
+            "phone": "042-111-825-888",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 31.5149,
+                "lng": 74.3493
+            }
+        },
+        {
+            "id": "mcb-islamabad-civic-centre",
+            "name": "MCB Main Civic Centre",
+            "serviceCategory": "banks",
+            "city": "Islamabad",
+            "address": "G-6, Melody Market, Islamabad",
+            "phone": "042-111-000-622",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 33.7219,
+                "lng": 73.0654
+            }
+        },
+        {
+            "id": "mcb-karachi-ii-chundrigar",
+            "name": "MCB Main Branch I.I. Chundrigar Road",
+            "serviceCategory": "banks",
+            "city": "Karachi",
+            "address": "Business & Finance Centre, I.I. Chundrigar Road, Karachi",
+            "phone": "021-111-000-622",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 24.8474,
+                "lng": 67.0196
+            }
+        },
+        {
+            "id": "mcb-lahore-gulberg",
+            "name": "MCB House Gulberg",
+            "serviceCategory": "banks",
+            "city": "Lahore",
+            "address": "15 Main Gulberg, Jail Road, Lahore",
+            "phone": "042-111-000-622",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 31.5087,
+                "lng": 74.3506
+            }
+        },
+        {
+            "id": "allied-islamabad-blue-area",
+            "name": "Allied Bank Corporate Branch",
+            "serviceCategory": "banks",
+            "city": "Islamabad",
+            "address": "Blue Area, Islamabad",
+            "phone": "042-111-225-225",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 33.7073,
+                "lng": 73.0564
+            }
+        },
+        {
+            "id": "allied-karachi-abdullah-haroon",
+            "name": "Allied Bank Abdullah Haroon Road",
+            "serviceCategory": "banks",
+            "city": "Karachi",
+            "address": "Saddar Cooperative Market, Abdullah Haroon Road, Karachi",
+            "phone": "021-111-225-225",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 24.8543,
+                "lng": 67.0232
+            }
+        },
+        {
+            "id": "allied-lahore-corporate",
+            "name": "Allied Bank Corporate Branch Lahore",
+            "serviceCategory": "banks",
+            "city": "Lahore",
+            "address": "Green Town, Lahore",
+            "phone": "042-111-225-225",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 31.4535,
+                "lng": 74.2732
+            }
+        },
+        {
+            "id": "indus-hospital-karachi-korangi",
+            "name": "Indus Hospital Korangi",
+            "serviceCategory": "hospitals",
+            "city": "Karachi",
+            "address": "Korangi Crossing, Karachi",
+            "phone": "021-111-111-747",
+            "hours": "24/7",
+            "coordinates": {
+                "lat": 24.8390,
+                "lng": 67.1055
+            }
+        },
+        {
+            "id": "indus-hospital-karachi-pib",
+            "name": "Indus Hospital Fakir Trust Campus",
+            "serviceCategory": "hospitals",
+            "city": "Karachi",
+            "address": "PIB Colony, Karachi",
+            "phone": "021-111-111-747",
+            "hours": "24/7",
+            "coordinates": {
+                "lat": 24.8978,
+                "lng": 67.0635
+            }
+        },
+        {
+            "id": "indus-hospital-lahore",
+            "name": "Indus Hospital QF Campus Lahore",
+            "serviceCategory": "hospitals",
+            "city": "Lahore",
+            "address": "Lahore",
+            "phone": "042-111-111-747",
+            "hours": "24/7",
+            "coordinates": {
+                "lat": 31.5204,
+                "lng": 74.3587
+            }
+        },
+        {
+            "id": "shaukat-khanum-lahore",
+            "name": "Shaukat Khanum Memorial Hospital Lahore",
+            "serviceCategory": "hospitals",
+            "city": "Lahore",
+            "address": "7-A, Block R-3, Johar Town, Lahore",
+            "phone": "042-111-155-555",
+            "hours": "24/7",
+            "coordinates": {
+                "lat": 31.4697,
+                "lng": 74.2728
+            }
+        },
+        {
+            "id": "shaukat-khanum-peshawar",
+            "name": "Shaukat Khanum Memorial Hospital Peshawar",
+            "serviceCategory": "hospitals",
+            "city": "Peshawar",
+            "address": "Phase-5, Hayatabad, Peshawar",
+            "phone": "091-111-155-555",
+            "hours": "24/7",
+            "coordinates": {
+                "lat": 33.9860,
+                "lng": 71.4398
+            }
+        },
+        {
+            "id": "aga-khan-karachi",
+            "name": "Aga Khan University Hospital",
+            "serviceCategory": "hospitals",
+            "city": "Karachi",
+            "address": "Stadium Road, Karachi",
+            "phone": "021-111-911-911",
+            "hours": "24/7",
+            "coordinates": {
+                "lat": 24.8897,
+                "lng": 67.0714
+            }
+        },
+        {
+            "id": "aga-khan-karachi-garden",
+            "name": "Aga Khan Hospital Garden",
+            "serviceCategory": "hospitals",
+            "city": "Karachi",
+            "address": "Garden Area, Karachi",
+            "phone": "021-111-911-911",
+            "hours": "8:00 AM - 10:00 PM",
+            "coordinates": {
+                "lat": 24.8726,
+                "lng": 67.0332
+            }
+        },
+        {
+            "id": "aga-khan-karachi-karimabad",
+            "name": "Aga Khan Hospital Karimabad",
+            "serviceCategory": "hospitals",
+            "city": "Karachi",
+            "address": "Karimabad, Karachi",
+            "phone": "021-111-911-911",
+            "hours": "8:00 AM - 10:00 PM",
+            "coordinates": {
+                "lat": 24.9262,
+                "lng": 67.0351
+            }
+        },
+        {
+            "id": "lesco-lahore-hq",
+            "name": "LESCO Headquarters",
+            "serviceCategory": "utilities",
+            "city": "Lahore",
+            "address": "22-A Queens Road, Lahore",
+            "phone": "042-111-000-118",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 31.5581,
+                "lng": 74.3217
+            }
+        },
+        {
+            "id": "lesco-lahore-ichra",
+            "name": "LESCO Ichra Customer Service Centre",
+            "serviceCategory": "utilities",
+            "city": "Lahore",
+            "address": "Shah Jamal Signal, Ferozpur Road, Lahore",
+            "phone": "042-7532678",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 31.5074,
+                "lng": 74.3126
+            }
+        },
+        {
+            "id": "lesco-lahore-township",
+            "name": "LESCO Township Customer Service Centre",
+            "serviceCategory": "utilities",
+            "city": "Lahore",
+            "address": "Township Grid, Chandni Chowk, Lahore",
+            "phone": "042-5143090",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 31.4697,
+                "lng": 74.2939
+            }
+        },
+        {
+            "id": "iesco-islamabad-hq",
+            "name": "IESCO Head Office",
+            "serviceCategory": "utilities",
+            "city": "Islamabad",
+            "address": "Street # 40, Sector G7/4, Islamabad",
+            "phone": "051-9252937",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 33.7149,
+                "lng": 73.0697
+            }
+        },
+        {
+            "id": "iesco-islamabad-blue-area",
+            "name": "IESCO Blue Area Office",
+            "serviceCategory": "utilities",
+            "city": "Islamabad",
+            "address": "Behind Shaheed-e-Millat, China Chowk, Blue Area, Islamabad",
+            "phone": "051-118",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 33.7073,
+                "lng": 73.0564
+            }
+        },
+        {
+            "id": "ke-karachi-hq",
+            "name": "K-Electric House",
+            "serviceCategory": "utilities",
+            "city": "Karachi",
+            "address": "39-B, Sunset Boulevard, Phase-II, DHA, Karachi",
+            "phone": "118",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 24.8248,
+                "lng": 67.0657
+            }
+        },
+        {
+            "id": "sngpl-lahore-hq",
+            "name": "SNGPL Head Office",
+            "serviceCategory": "utilities",
+            "city": "Lahore",
+            "address": "21-Kashmir Road, Lahore",
+            "phone": "042-1199",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 31.5804,
+                "lng": 74.3293
+            }
+        },
+        {
+            "id": "sngpl-islamabad",
+            "name": "SNGPL Islamabad Regional Office",
+            "serviceCategory": "utilities",
+            "city": "Islamabad",
+            "address": "28-30 Sector I-9, Industrial Area, Islamabad",
+            "phone": "051-1199",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 33.6569,
+                "lng": 73.0601
+            }
+        },
+        {
+            "id": "sngpl-rawalpindi",
+            "name": "SNGPL Rawalpindi Regional Office",
+            "serviceCategory": "utilities",
+            "city": "Rawalpindi",
+            "address": "Al-Mansha Plaza, Main G.T Road, Rawalpindi",
+            "phone": "051-1199",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 33.6007,
+                "lng": 73.0679
+            }
+        },
+        {
+            "id": "ssgc-karachi-hq",
+            "name": "SSGC House Gulshan",
+            "serviceCategory": "utilities",
+            "city": "Karachi",
+            "address": "Block 14, Sir Shah Suleman Road, Gulshan-e-Iqbal, Karachi",
+            "phone": "021-1199",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 24.9169,
+                "lng": 67.0867
+            }
+        },
+        {
+            "id": "ssgc-karachi-defence",
+            "name": "SSGC Defence CFC",
+            "serviceCategory": "utilities",
+            "city": "Karachi",
+            "address": "Defence, Karachi",
+            "phone": "021-1199",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 24.8248,
+                "lng": 67.0657
+            }
+        },
+        {
+            "id": "excise-islamabad",
+            "name": "Excise & Taxation Office Islamabad",
+            "serviceCategory": "excise",
+            "city": "Islamabad",
+            "address": "Adjacent to HEC Building, Service Road, Sector H-9, Islamabad",
+            "phone": "051-9255987",
+            "hours": "8:00 AM - 1:30 PM",
+            "coordinates": {
+                "lat": 33.6534,
+                "lng": 73.0521
+            }
+        },
+        {
+            "id": "excise-karachi-university-road",
+            "name": "Excise & Taxation Motor Registration Office",
+            "serviceCategory": "excise",
+            "city": "Karachi",
+            "address": "University Road, Karachi East District, Sindh",
+            "phone": "021-99231410",
+            "hours": "9:00 AM - 2:00 PM",
+            "coordinates": {
+                "lat": 24.9461,
+                "lng": 67.1151
+            }
+        },
+        {
+            "id": "excise-karachi-clifton",
+            "name": "Motor Registration Executive Center Clifton",
+            "serviceCategory": "excise",
+            "city": "Karachi",
+            "address": "Block 7, Clifton, Karachi",
+            "phone": "021-99231410",
+            "hours": "9:00 AM - 2:00 PM",
+            "coordinates": {
+                "lat": 24.8127,
+                "lng": 67.0266
+            }
+        },
+        {
+            "id": "excise-lahore-egerton",
+            "name": "Excise & Taxation Office Transport House",
+            "serviceCategory": "excise",
+            "city": "Lahore",
+            "address": "11-A Egerton Road, Lahore",
+            "phone": "042-99202775",
+            "hours": "9:00 AM - 2:00 PM",
+            "coordinates": {
+                "lat": 31.5532,
+                "lng": 74.3279
+            }
+        },
+        {
+            "id": "excise-lahore-farid-court",
+            "name": "Excise & Taxation Office Farid Court",
+            "serviceCategory": "excise",
+            "city": "Lahore",
+            "address": "2-A Farid Court Road, Lahore",
+            "phone": "042-99202775",
+            "hours": "9:00 AM - 2:00 PM",
+            "coordinates": {
+                "lat": 31.5437,
+                "lng": 74.3212
+            }
+        }
+    ]
+}

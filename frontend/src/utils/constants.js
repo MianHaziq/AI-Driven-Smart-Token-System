@@ -168,6 +168,7 @@ export const SERVICES = [
     name: 'NADRA',
     description: 'National Database & Registration Authority',
     icon: 'FiCreditCard',
+    emoji: '🪪',
     color: 'bg-blue-500',
     subServices: [
       { id: 'cnic-new', name: 'New CNIC', duration: 15, fee: 400 },
@@ -183,6 +184,7 @@ export const SERVICES = [
     name: 'Passport Office',
     description: 'Directorate General of Immigration & Passports',
     icon: 'FiGlobe',
+    emoji: '📘',
     color: 'bg-green-600',
     subServices: [
       { id: 'passport-new', name: 'New Passport', duration: 30, fee: 3500 },
@@ -197,6 +199,7 @@ export const SERVICES = [
     name: 'Excise & Taxation',
     description: 'Vehicle Registration & Property Tax',
     icon: 'FiTruck',
+    emoji: '🚗',
     color: 'bg-amber-500',
     subServices: [
       { id: 'vehicle-registration', name: 'Vehicle Registration', duration: 45, fee: 2000 },
@@ -211,6 +214,7 @@ export const SERVICES = [
     name: 'Electricity (WAPDA/LESCO)',
     description: 'Electricity Connection & Billing',
     icon: 'FiZap',
+    emoji: '💡',
     color: 'bg-yellow-500',
     subServices: [
       { id: 'new-connection', name: 'New Connection', duration: 30, fee: 5000 },
@@ -225,6 +229,7 @@ export const SERVICES = [
     name: 'Sui Gas',
     description: 'Gas Connection & Services',
     icon: 'FiThermometer',
+    emoji: '🌡️',
     color: 'bg-orange-500',
     subServices: [
       { id: 'gas-new-connection', name: 'New Gas Connection', duration: 35, fee: 8000 },
@@ -238,6 +243,7 @@ export const SERVICES = [
     name: 'Banks',
     description: 'Banking Services',
     icon: 'FiDollarSign',
+    emoji: '🏦',
     color: 'bg-indigo-500',
     subServices: [
       { id: 'account-opening', name: 'Account Opening', duration: 30, fee: 0 },
@@ -262,8 +268,8 @@ export const ROUTES = {
 
   // Customer
   CUSTOMER_DASHBOARD: '/customer/dashboard',
-  SERVICES: '/customer/services',
-  BOOK_TOKEN: '/customer/book-token',
+  SERVICES: '/services',
+  BOOK_TOKEN: '/book-token',
   MY_TOKENS: '/my-tokens',
   TOKEN_DETAILS: '/token/:id',
   LIVE_TRACKING: '/track/:id',
@@ -271,7 +277,7 @@ export const ROUTES = {
   SETTINGS: '/settings',
 
   // Admin
-  ADMIN_DASHBOARD: '/admin',
+  ADMIN_DASHBOARD: '/admin/dashboard',
   MANAGE_QUEUE: '/admin/queue',
   MANAGE_SERVICES: '/admin/services',
   MANAGE_COUNTERS: '/admin/counters',

@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { FiUser, FiMail, FiLock, FiPhone, FiArrowRight } from 'react-icons/fi';
+import { FiUser, FiMail, FiLock, FiPhone, FiArrowRight, FiCreditCard } from 'react-icons/fi';
 import { Button, Input, Alert } from '../../components/common';
 import { ROUTES } from '../../utils/constants';
+import useAuthStore from '../../store/authStore';
+import toast from 'react-hot-toast';
 
-const Register = ({ onLogin }) => {
+const Register = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const registerUser = useAuthStore((state) => state.register);
 
   const {
     register,
@@ -24,25 +27,22 @@ const Register = ({ onLogin }) => {
     setError('');
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const result = await registerUser(
+        data.name,
+        data.phone,
+        data.cnic,
+        data.email,
+        data.password
+      );
 
-      // Mock registration
-      const mockUser = {
-        id: '1',
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        role: 'customer',
-      };
-
-      if (onLogin) {
-        onLogin(mockUser);
+      if (result.success) {
+        toast.success('Registration successful! Please login.');
+        navigate(ROUTES.LOGIN);
+      } else {
+        setError(result.message);
       }
-
-      navigate(ROUTES.CUSTOMER_DASHBOARD);
     } catch (err) {
-      setError('Registration failed. Please try again.');
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -108,14 +108,16 @@ const Register = ({ onLogin }) => {
         />
 
         <Input
-          label="CNIC (Optional)"
+          label="CNIC"
           type="text"
           placeholder="XXXXX-XXXXXXX-X"
+          icon={FiCreditCard}
           error={errors.cnic?.message}
           {...register('cnic', {
+            required: 'CNIC is required',
             pattern: {
               value: /^[0-9]{5}-[0-9]{7}-[0-9]$/,
-              message: 'Enter valid CNIC format',
+              message: 'Enter valid CNIC format (XXXXX-XXXXXXX-X)',
             },
           })}
         />

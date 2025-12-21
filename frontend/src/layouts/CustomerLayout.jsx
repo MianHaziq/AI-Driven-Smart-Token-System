@@ -3,13 +3,15 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { FiMenu } from 'react-icons/fi';
 import { Sidebar } from '../components/common';
 import { ROUTES } from '../utils/constants';
+import useAuthStore from '../store/authStore';
 
-const CustomerLayout = ({ user, onLogout }) => {
+const CustomerLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
+  const { user, logout } = useAuthStore();
 
   const handleLogout = () => {
-    if (onLogout) onLogout();
+    logout();
     navigate(ROUTES.LOGIN);
   };
 
@@ -20,7 +22,6 @@ const CustomerLayout = ({ user, onLogout }) => {
         <Sidebar
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
-          user={user}
           onLogout={handleLogout}
         />
 
@@ -39,7 +40,7 @@ const CustomerLayout = ({ user, onLogout }) => {
               <div className="flex items-center !space-x-4">
                 <div className="text-right">
                   <p className="text-sm font-medium text-gray-900">
-                    {user?.name || 'User'}
+                    {user?.fullName || 'User'}
                   </p>
                   <p className="text-xs text-gray-500 capitalize">
                     {user?.role || 'Customer'}
@@ -47,7 +48,7 @@ const CustomerLayout = ({ user, onLogout }) => {
                 </div>
                 <div className="w-10 h-10 rounded-full bg-pakistan-green-50 flex items-center justify-center">
                   <span className="text-pakistan-green font-semibold">
-                    {user?.name?.charAt(0).toUpperCase() || 'U'}
+                    {user?.fullName?.charAt(0).toUpperCase() || 'U'}
                   </span>
                 </div>
               </div>
