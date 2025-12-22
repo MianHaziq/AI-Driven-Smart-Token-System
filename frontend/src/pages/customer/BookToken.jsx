@@ -219,12 +219,12 @@ const BookToken = () => {
     <div className="max-w-3xl mx-auto">
       {/* Progress Steps */}
       <div className="!mb-8">
-        <div className="flex items-center justify-between">
+        <div className="!flex !items-center !justify-center">
           {steps.map((s, index) => (
-            <div key={s.num} className="flex items-center">
+            <div key={s.num} className="!flex !items-center">
               <div
                 className={`
-                  w-10 h-10 rounded-full flex items-center justify-center font-semibold
+                  w-10 h-10 rounded-full !flex !items-center !justify-center font-semibold
                   ${step >= s.num
                     ? 'bg-pakistan-green text-white'
                     : 'bg-gray-200 text-gray-500'
@@ -244,7 +244,7 @@ const BookToken = () => {
             </div>
           ))}
         </div>
-        <div className="flex justify-between !mt-2">
+        <div className="  !flex !justify-between !mt-2">
           {steps.map((s) => (
             <span
               key={s.num}

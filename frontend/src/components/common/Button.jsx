@@ -2,9 +2,9 @@ import { forwardRef } from 'react';
 import { motion } from 'framer-motion';
 
 const variants = {
-  primary: 'bg-pakistan-green hover:bg-pakistan-green-light text-white',
-  secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-800',
-  outline: 'border-2 border-pakistan-green text-pakistan-green hover:bg-pakistan-green hover:text-white',
+  primary: '!bg-pakistan-green hover:bg-pakistan-green-light text-white',
+  secondary: '!bg-gray-100 hover:bg-gray-200 text-gray-800',
+  outline: '!border-2 border-pakistan-green text-pakistan-green hover:bg-pakistan-green hover:text-white',
   ghost: 'text-pakistan-green hover:bg-pakistan-green-50',
   danger: 'bg-red-500 hover:bg-red-600 text-white',
   success: 'bg-emerald-500 hover:bg-emerald-600 text-white',
