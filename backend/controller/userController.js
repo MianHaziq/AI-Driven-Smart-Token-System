@@ -1,4 +1,4 @@
-const userModel = require("../Models/user");
+const userModel = require("../models/user");
 const bcrypt = require("bcrypt");
 
 /* ===================== CREATE USER (ADMIN USE) ===================== */

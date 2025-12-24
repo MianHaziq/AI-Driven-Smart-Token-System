@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   FiPlus,
@@ -6,14 +6,11 @@ import {
   FiTrash2,
   FiMonitor,
   FiUser,
-  FiClock,
   FiActivity,
   FiPause,
   FiPlay,
   FiPower,
-  FiRefreshCw,
   FiCheckCircle,
-  FiAlertCircle,
 } from 'react-icons/fi';
 import {
   Card,
@@ -23,88 +20,49 @@ import {
   Input,
   Select,
   ConfirmDialog,
+  Loader,
 } from '../../components/common';
 import toast from 'react-hot-toast';
+import api from '../../utils/api';
 
 const Counters = () => {
   const [showModal, setShowModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedCounter, setSelectedCounter] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-
-  // Mock data
-  const [counters, setCounters] = useState([
-    {
-      id: '1',
-      name: 'Counter 1',
-      status: 'serving',
-      currentToken: 'A-096',
-      operator: { id: 'op1', name: 'Ahmad Khan', avatar: 'AK' },
-      tokensServed: 42,
-      avgServiceTime: 12,
-      services: ['nadra', 'passport'],
-      startedAt: new Date(Date.now() - 3600000 * 4),
-    },
-    {
-      id: '2',
-      name: 'Counter 2',
-      status: 'available',
-      currentToken: null,
-      operator: { id: 'op2', name: 'Fatima Ali', avatar: 'FA' },
-      tokensServed: 38,
-      avgServiceTime: 10,
-      services: ['nadra'],
-      startedAt: new Date(Date.now() - 3600000 * 3),
-    },
-    {
-      id: '3',
-      name: 'Counter 3',
-      status: 'break',
-      currentToken: null,
-      operator: { id: 'op3', name: 'Bilal Ahmed', avatar: 'BA' },
-      tokensServed: 35,
-      avgServiceTime: 14,
-      services: ['excise', 'banks'],
-      startedAt: new Date(Date.now() - 3600000 * 5),
-    },
-    {
-      id: '4',
-      name: 'Counter 4',
-      status: 'offline',
-      currentToken: null,
-      operator: null,
-      tokensServed: 0,
-      avgServiceTime: 0,
-      services: ['nadra', 'passport', 'excise'],
-      startedAt: null,
-    },
-    {
-      id: '5',
-      name: 'Counter 5',
-      status: 'serving',
-      currentToken: 'A-097',
-      operator: { id: 'op4', name: 'Zainab Hassan', avatar: 'ZH' },
-      tokensServed: 28,
-      avgServiceTime: 15,
-      services: ['passport'],
-      startedAt: new Date(Date.now() - 3600000 * 2),
-    },
-  ]);
-
-  const operators = [
-    { value: 'op1', label: 'Ahmad Khan' },
-    { value: 'op2', label: 'Fatima Ali' },
-    { value: 'op3', label: 'Bilal Ahmed' },
-    { value: 'op4', label: 'Zainab Hassan' },
-    { value: 'op5', label: 'Usman Malik' },
-  ];
+  const [counters, setCounters] = useState([]);
+  const [operators, setOperators] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const serviceOptions = [
     { value: 'nadra', label: 'NADRA' },
     { value: 'passport', label: 'Passport' },
     { value: 'excise', label: 'Excise' },
     { value: 'banks', label: 'Banks' },
+    { value: 'utilities', label: 'Utilities' },
   ];
+
+  // Fetch counters and operators from backend
+  const fetchCounters = async () => {
+    try {
+      setLoading(true);
+      const [countersRes, operatorsRes] = await Promise.all([
+        api.get('/counter/read'),
+        api.get('/counter/operators'),
+      ]);
+      setCounters(countersRes.data);
+      setOperators(operatorsRes.data);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to fetch counters');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCounters();
+  }, []);
 
   const getStatusConfig = (status) => {
     const config = {
@@ -161,48 +119,61 @@ const Counters = () => {
     setShowDeleteConfirm(true);
   };
 
-  const handleStatusChange = (counter, newStatus) => {
-    setCounters(counters.map(c =>
-      c.id === counter.id ? { ...c, status: newStatus } : c
-    ));
-    toast.success(`${counter.name} is now ${getStatusConfig(newStatus).label.toLowerCase()}`);
-  };
-
-  const handleSaveCounter = (formData) => {
-    if (isEditing) {
-      setCounters(counters.map(c =>
-        c.id === selectedCounter.id ? { ...c, ...formData } : c
-      ));
-      toast.success('Counter updated successfully');
-    } else {
-      const newCounter = {
-        id: Date.now().toString(),
-        ...formData,
-        status: 'offline',
-        currentToken: null,
-        tokensServed: 0,
-        avgServiceTime: 0,
-        startedAt: null,
-      };
-      setCounters([...counters, newCounter]);
-      toast.success('Counter added successfully');
+  const handleStatusChange = async (counter, newStatus) => {
+    try {
+      await api.patch(`/counter/status/${counter._id}`, { status: newStatus });
+      toast.success(`${counter.name} is now ${getStatusConfig(newStatus).label.toLowerCase()}`);
+      fetchCounters();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update status');
     }
-    setShowModal(false);
   };
 
-  const confirmDelete = () => {
-    setCounters(counters.filter(c => c.id !== selectedCounter.id));
-    toast.success('Counter deleted successfully');
-    setShowDeleteConfirm(false);
-    setSelectedCounter(null);
+  const handleSaveCounter = async (formData) => {
+    try {
+      setSaving(true);
+      if (isEditing) {
+        await api.patch(`/counter/update/${selectedCounter._id}`, formData);
+        toast.success('Counter updated successfully');
+      } else {
+        await api.post('/counter/create', formData);
+        toast.success('Counter added successfully');
+      }
+      setShowModal(false);
+      fetchCounters();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to save counter');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await api.delete(`/counter/delete/${selectedCounter._id}`);
+      toast.success('Counter deleted successfully');
+      setShowDeleteConfirm(false);
+      setSelectedCounter(null);
+      fetchCounters();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete counter');
+    }
   };
 
   const stats = {
     total: counters.length,
     active: counters.filter(c => c.status === 'serving' || c.status === 'available').length,
     serving: counters.filter(c => c.status === 'serving').length,
-    totalServed: counters.reduce((sum, c) => sum + c.tokensServed, 0),
+    totalServed: counters.reduce((sum, c) => sum + (c.tokensServed || 0), 0),
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -295,7 +266,7 @@ const Counters = () => {
 
           return (
             <motion.div
-              key={counter.id}
+              key={counter._id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
@@ -325,7 +296,7 @@ const Counters = () => {
 
                 {/* Operator */}
                 <div className="flex items-center gap-3 mb-4">
-                  {counter.operator ? (
+                  {counter.operator?.name ? (
                     <>
                       <div className="w-10 h-10 bg-pakistan-green rounded-full flex items-center justify-center">
                         <span className="text-white font-semibold text-sm">{counter.operator.avatar}</span>
@@ -348,18 +319,18 @@ const Counters = () => {
                 {/* Stats */}
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div className="bg-gray-50 rounded-lg p-3 text-center">
-                    <p className="text-xl font-bold text-pakistan-green">{counter.tokensServed}</p>
+                    <p className="text-xl font-bold text-pakistan-green">{counter.tokensServed || 0}</p>
                     <p className="text-xs text-gray-500">Served Today</p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-3 text-center">
-                    <p className="text-xl font-bold text-gray-900">{counter.avgServiceTime}m</p>
+                    <p className="text-xl font-bold text-gray-900">{counter.avgServiceTime || 0}m</p>
                     <p className="text-xs text-gray-500">Avg. Service</p>
                   </div>
                 </div>
 
                 {/* Services */}
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {counter.services.map(service => (
+                  {counter.services?.map(service => (
                     <span
                       key={service}
                       className="px-2 py-1 bg-pakistan-green-50 text-pakistan-green text-xs font-medium rounded-full capitalize"
@@ -438,6 +409,16 @@ const Counters = () => {
         })}
       </div>
 
+      {counters.length === 0 && (
+        <Card className="border-0 shadow-lg text-center py-12">
+          <FiMonitor className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500">No counters found</p>
+          <Button variant="outline" className="mt-4" onClick={handleAddCounter}>
+            Add your first counter
+          </Button>
+        </Card>
+      )}
+
       {/* Add/Edit Modal */}
       <CounterModal
         isOpen={showModal}
@@ -447,6 +428,7 @@ const Counters = () => {
         isEditing={isEditing}
         operators={operators}
         serviceOptions={serviceOptions}
+        saving={saving}
       />
 
       {/* Delete Confirmation */}
@@ -464,22 +446,28 @@ const Counters = () => {
 };
 
 // Counter Modal Component
-const CounterModal = ({ isOpen, onClose, onSave, counter, isEditing, operators, serviceOptions }) => {
+const CounterModal = ({ isOpen, onClose, onSave, counter, isEditing, operators, serviceOptions, saving }) => {
   const [formData, setFormData] = useState({
     name: '',
     operator: null,
     services: [],
   });
 
-  useState(() => {
+  useEffect(() => {
     if (counter) {
       setFormData({
-        name: counter.name,
-        operator: counter.operator,
-        services: counter.services,
+        name: counter.name || '',
+        operator: counter.operator || null,
+        services: counter.services || [],
+      });
+    } else {
+      setFormData({
+        name: '',
+        operator: null,
+        services: [],
       });
     }
-  }, [counter]);
+  }, [counter, isOpen]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -517,7 +505,10 @@ const CounterModal = ({ isOpen, onClose, onSave, counter, isEditing, operators, 
           value={formData.operator?.id || ''}
           onChange={(e) => {
             const op = operators.find(o => o.value === e.target.value);
-            setFormData({ ...formData, operator: op ? { id: op.value, name: op.label, avatar: op.label.split(' ').map(n => n[0]).join('') } : null });
+            setFormData({
+              ...formData,
+              operator: op ? { id: op.value, name: op.label, avatar: op.label.split(' ').map(n => n[0]).join('') } : null
+            });
           }}
         />
 
@@ -547,7 +538,7 @@ const CounterModal = ({ isOpen, onClose, onSave, counter, isEditing, operators, 
           <Button type="button" variant="outline" fullWidth onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" fullWidth>
+          <Button type="submit" fullWidth loading={saving}>
             {isEditing ? 'Update Counter' : 'Add Counter'}
           </Button>
         </div>

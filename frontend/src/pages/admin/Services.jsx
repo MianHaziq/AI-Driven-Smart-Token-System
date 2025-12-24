@@ -1,30 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   FiPlus,
   FiEdit2,
   FiTrash2,
-  FiSearch,
   FiClock,
   FiDollarSign,
   FiLayers,
   FiToggleLeft,
   FiToggleRight,
-  FiMoreVertical,
   FiCheckCircle,
-  FiXCircle,
 } from 'react-icons/fi';
 import {
   Card,
-  Badge,
   Button,
   SearchBar,
   Modal,
   Input,
   Select,
   ConfirmDialog,
+  Loader,
 } from '../../components/common';
 import toast from 'react-hot-toast';
+import api from '../../utils/api';
 
 const Services = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -33,106 +31,9 @@ const Services = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-
-  // Mock data
-  const [services, setServices] = useState([
-    {
-      id: '1',
-      name: 'New CNIC',
-      nameUrdu: 'نیا شناختی کارڈ',
-      category: 'nadra',
-      avgTime: 15,
-      fee: 400,
-      isActive: true,
-      description: 'Apply for a new Computerized National Identity Card',
-      tokensToday: 45,
-      totalTokens: 1250,
-    },
-    {
-      id: '2',
-      name: 'CNIC Renewal',
-      nameUrdu: 'شناختی کارڈ کی تجدید',
-      category: 'nadra',
-      avgTime: 10,
-      fee: 400,
-      isActive: true,
-      description: 'Renew your existing CNIC',
-      tokensToday: 62,
-      totalTokens: 2100,
-    },
-    {
-      id: '3',
-      name: 'CNIC Modification',
-      nameUrdu: 'شناختی کارڈ میں تبدیلی',
-      category: 'nadra',
-      avgTime: 15,
-      fee: 500,
-      isActive: true,
-      description: 'Modify details on your existing CNIC',
-      tokensToday: 28,
-      totalTokens: 890,
-    },
-    {
-      id: '4',
-      name: 'New Passport',
-      nameUrdu: 'نیا پاسپورٹ',
-      category: 'passport',
-      avgTime: 30,
-      fee: 3500,
-      isActive: true,
-      description: 'Apply for a new passport',
-      tokensToday: 35,
-      totalTokens: 980,
-    },
-    {
-      id: '5',
-      name: 'Passport Renewal',
-      nameUrdu: 'پاسپورٹ کی تجدید',
-      category: 'passport',
-      avgTime: 25,
-      fee: 3500,
-      isActive: true,
-      description: 'Renew your existing passport',
-      tokensToday: 42,
-      totalTokens: 1150,
-    },
-    {
-      id: '6',
-      name: 'Vehicle Registration',
-      nameUrdu: 'گاڑی کی رجسٹریشن',
-      category: 'excise',
-      avgTime: 45,
-      fee: 2000,
-      isActive: false,
-      description: 'Register a new vehicle',
-      tokensToday: 0,
-      totalTokens: 560,
-    },
-    {
-      id: '7',
-      name: 'Driving License',
-      nameUrdu: 'ڈرائیونگ لائسنس',
-      category: 'excise',
-      avgTime: 30,
-      fee: 1200,
-      isActive: true,
-      description: 'Apply for a new driving license',
-      tokensToday: 25,
-      totalTokens: 720,
-    },
-    {
-      id: '8',
-      name: 'Account Opening',
-      nameUrdu: 'اکاؤنٹ کھولنا',
-      category: 'banks',
-      avgTime: 30,
-      fee: 0,
-      isActive: true,
-      description: 'Open a new bank account',
-      tokensToday: 18,
-      totalTokens: 450,
-    },
-  ]);
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const categories = [
     { value: 'all', label: 'All Categories' },
@@ -142,6 +43,23 @@ const Services = () => {
     { value: 'banks', label: 'Banks' },
     { value: 'utilities', label: 'Utilities' },
   ];
+
+  // Fetch services from backend
+  const fetchServices = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/service/read');
+      setServices(response.data);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to fetch services');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchServices();
+  }, []);
 
   const getCategoryConfig = (category) => {
     const config = {
@@ -155,8 +73,8 @@ const Services = () => {
   };
 
   const filteredServices = services.filter((service) => {
-    const matchesSearch = service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      service.nameUrdu.includes(searchQuery);
+    const matchesSearch = service.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      service.nameUrdu?.includes(searchQuery);
     const matchesCategory = categoryFilter === 'all' || service.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
@@ -178,44 +96,60 @@ const Services = () => {
     setShowDeleteConfirm(true);
   };
 
-  const handleToggleStatus = (service) => {
-    setServices(services.map(s =>
-      s.id === service.id ? { ...s, isActive: !s.isActive } : s
-    ));
-    toast.success(`${service.name} ${service.isActive ? 'disabled' : 'enabled'}`);
-  };
-
-  const handleSaveService = (formData) => {
-    if (isEditing) {
-      setServices(services.map(s =>
-        s.id === selectedService.id ? { ...s, ...formData } : s
-      ));
-      toast.success('Service updated successfully');
-    } else {
-      const newService = {
-        id: Date.now().toString(),
-        ...formData,
-        tokensToday: 0,
-        totalTokens: 0,
-      };
-      setServices([...services, newService]);
-      toast.success('Service added successfully');
+  const handleToggleStatus = async (service) => {
+    try {
+      await api.patch(`/service/toggle/${service._id}`);
+      toast.success(`${service.name} ${service.isActive ? 'disabled' : 'enabled'}`);
+      fetchServices();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update status');
     }
-    setShowModal(false);
   };
 
-  const confirmDelete = () => {
-    setServices(services.filter(s => s.id !== selectedService.id));
-    toast.success('Service deleted successfully');
-    setShowDeleteConfirm(false);
-    setSelectedService(null);
+  const handleSaveService = async (formData) => {
+    try {
+      setSaving(true);
+      if (isEditing) {
+        await api.patch(`/service/update/${selectedService._id}`, formData);
+        toast.success('Service updated successfully');
+      } else {
+        await api.post('/service/create', formData);
+        toast.success('Service added successfully');
+      }
+      setShowModal(false);
+      fetchServices();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to save service');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await api.delete(`/service/delete/${selectedService._id}`);
+      toast.success('Service deleted successfully');
+      setShowDeleteConfirm(false);
+      setSelectedService(null);
+      fetchServices();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete service');
+    }
   };
 
   const stats = {
     totalServices: services.length,
     activeServices: services.filter(s => s.isActive).length,
-    totalTokensToday: services.reduce((sum, s) => sum + s.tokensToday, 0),
+    totalTokensToday: services.reduce((sum, s) => sum + (s.tokensToday || 0), 0),
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -309,7 +243,7 @@ const Services = () => {
           const categoryConfig = getCategoryConfig(service.category);
           return (
             <motion.div
-              key={service.id}
+              key={service._id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
@@ -360,11 +294,11 @@ const Services = () => {
                   <div className="flex items-center gap-4 text-sm">
                     <div>
                       <span className="text-gray-500">Today:</span>
-                      <span className="ml-1 font-semibold text-pakistan-green">{service.tokensToday}</span>
+                      <span className="ml-1 font-semibold text-pakistan-green">{service.tokensToday || 0}</span>
                     </div>
                     <div>
                       <span className="text-gray-500">Total:</span>
-                      <span className="ml-1 font-semibold text-gray-900">{service.totalTokens}</span>
+                      <span className="ml-1 font-semibold text-gray-900">{service.totalTokens || 0}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
@@ -406,6 +340,7 @@ const Services = () => {
         service={selectedService}
         isEditing={isEditing}
         categories={categories.filter(c => c.value !== 'all')}
+        saving={saving}
       />
 
       {/* Delete Confirmation */}
@@ -423,7 +358,7 @@ const Services = () => {
 };
 
 // Service Modal Component
-const ServiceModal = ({ isOpen, onClose, onSave, service, isEditing, categories }) => {
+const ServiceModal = ({ isOpen, onClose, onSave, service, isEditing, categories, saving }) => {
   const [formData, setFormData] = useState({
     name: '',
     nameUrdu: '',
@@ -434,19 +369,29 @@ const ServiceModal = ({ isOpen, onClose, onSave, service, isEditing, categories 
     isActive: true,
   });
 
-  useState(() => {
+  useEffect(() => {
     if (service) {
       setFormData({
-        name: service.name,
-        nameUrdu: service.nameUrdu,
-        category: service.category,
-        avgTime: service.avgTime,
-        fee: service.fee,
-        description: service.description,
-        isActive: service.isActive,
+        name: service.name || '',
+        nameUrdu: service.nameUrdu || '',
+        category: service.category || 'nadra',
+        avgTime: service.avgTime || 15,
+        fee: service.fee || 0,
+        description: service.description || '',
+        isActive: service.isActive !== undefined ? service.isActive : true,
+      });
+    } else {
+      setFormData({
+        name: '',
+        nameUrdu: '',
+        category: 'nadra',
+        avgTime: 15,
+        fee: 0,
+        description: '',
+        isActive: true,
       });
     }
-  }, [service]);
+  }, [service, isOpen]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -484,24 +429,26 @@ const ServiceModal = ({ isOpen, onClose, onSave, service, isEditing, categories 
             label="Avg. Time (minutes)"
             type="number"
             value={formData.avgTime}
-            onChange={(e) => setFormData({ ...formData, avgTime: parseInt(e.target.value) })}
+            onChange={(e) => setFormData({ ...formData, avgTime: parseInt(e.target.value) || 0 })}
             min="1"
           />
           <Input
             label="Fee (Rs.)"
             type="number"
             value={formData.fee}
-            onChange={(e) => setFormData({ ...formData, fee: parseInt(e.target.value) })}
+            onChange={(e) => setFormData({ ...formData, fee: parseInt(e.target.value) || 0 })}
             min="0"
           />
         </div>
-        <Input
-          label="Description"
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          as="textarea"
-          rows={3}
-        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <textarea
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            rows={3}
+            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pakistan-green/20 focus:border-pakistan-green transition-all"
+          />
+        </div>
         <div className="flex items-center gap-3">
           <input
             type="checkbox"
@@ -518,7 +465,7 @@ const ServiceModal = ({ isOpen, onClose, onSave, service, isEditing, categories 
           <Button type="button" variant="outline" fullWidth onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" fullWidth>
+          <Button type="submit" fullWidth loading={saving}>
             {isEditing ? 'Update Service' : 'Add Service'}
           </Button>
         </div>

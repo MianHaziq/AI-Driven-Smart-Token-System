@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   FiSettings,
@@ -6,65 +6,67 @@ import {
   FiGlobe,
   FiBell,
   FiClock,
-  FiShield,
-  FiMail,
-  FiSmartphone,
-  FiDatabase,
-  FiRefreshCw,
-  FiToggleLeft,
-  FiToggleRight,
   FiMapPin,
   FiVolume2,
   FiSun,
-  FiMoon,
 } from 'react-icons/fi';
-import { Card, Button, Input, Select } from '../../components/common';
+import { Card, Button, Input, Select, Loader } from '../../components/common';
 import toast from 'react-hot-toast';
+import api from '../../utils/api';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('general');
   const [isSaving, setIsSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Settings state
   const [settings, setSettings] = useState({
-    // General
-    centerName: 'NADRA Office - Islamabad',
-    centerCode: 'ISB-001',
-    address: 'F-8 Markaz, Islamabad',
-    phone: '051-1234567',
-    email: 'isb-001@nadra.gov.pk',
+    centerName: '',
+    centerCode: '',
+    address: '',
+    phone: '',
+    email: '',
     timezone: 'Asia/Karachi',
     language: 'en',
-
-    // Queue Settings
     maxQueueSize: 200,
     avgServiceTime: 15,
     tokenPrefix: 'A',
     autoCallEnabled: true,
     noShowTimeout: 5,
     priorityEnabled: true,
-
-    // Notifications
     smsEnabled: true,
     emailEnabled: true,
     pushEnabled: true,
     notifyBefore: 3,
     reminderInterval: 10,
-
-    // Operating Hours
     openTime: '09:00',
     closeTime: '17:00',
     breakStart: '13:00',
     breakEnd: '14:00',
     workDays: ['mon', 'tue', 'wed', 'thu', 'fri'],
-
-    // Display
     displayLanguage: 'bilingual',
     showEstimatedWait: true,
     showQueuePosition: true,
     announcementVolume: 80,
     darkMode: false,
   });
+
+  // Fetch settings from backend
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/settings');
+      setSettings(prev => ({ ...prev, ...response.data }));
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to fetch settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
 
   const tabs = [
     { id: 'general', label: 'General', icon: FiSettings },
@@ -97,10 +99,15 @@ const Settings = () => {
   ];
 
   const handleSave = async () => {
-    setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsSaving(false);
-    toast.success('Settings saved successfully');
+    try {
+      setIsSaving(true);
+      await api.put('/settings', settings);
+      toast.success('Settings saved successfully');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to save settings');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleToggle = (key) => {
@@ -136,6 +143,14 @@ const Settings = () => {
       </button>
     </div>
   );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -265,13 +280,13 @@ const Settings = () => {
                       label="Max Queue Size"
                       type="number"
                       value={settings.maxQueueSize}
-                      onChange={(e) => setSettings({ ...settings, maxQueueSize: parseInt(e.target.value) })}
+                      onChange={(e) => setSettings({ ...settings, maxQueueSize: parseInt(e.target.value) || 0 })}
                     />
                     <Input
                       label="Avg Service Time (min)"
                       type="number"
                       value={settings.avgServiceTime}
-                      onChange={(e) => setSettings({ ...settings, avgServiceTime: parseInt(e.target.value) })}
+                      onChange={(e) => setSettings({ ...settings, avgServiceTime: parseInt(e.target.value) || 0 })}
                     />
                     <Input
                       label="Token Prefix"
@@ -285,7 +300,7 @@ const Settings = () => {
                     label="No-Show Timeout (minutes)"
                     type="number"
                     value={settings.noShowTimeout}
-                    onChange={(e) => setSettings({ ...settings, noShowTimeout: parseInt(e.target.value) })}
+                    onChange={(e) => setSettings({ ...settings, noShowTimeout: parseInt(e.target.value) || 0 })}
                     helperText="Time to wait before marking token as no-show after being called"
                   />
 
@@ -346,14 +361,14 @@ const Settings = () => {
                       label="Notify Before (tokens)"
                       type="number"
                       value={settings.notifyBefore}
-                      onChange={(e) => setSettings({ ...settings, notifyBefore: parseInt(e.target.value) })}
+                      onChange={(e) => setSettings({ ...settings, notifyBefore: parseInt(e.target.value) || 0 })}
                       helperText="Number of tokens before to send notification"
                     />
                     <Input
                       label="Reminder Interval (min)"
                       type="number"
                       value={settings.reminderInterval}
-                      onChange={(e) => setSettings({ ...settings, reminderInterval: parseInt(e.target.value) })}
+                      onChange={(e) => setSettings({ ...settings, reminderInterval: parseInt(e.target.value) || 0 })}
                       helperText="Time between reminder notifications"
                     />
                   </div>

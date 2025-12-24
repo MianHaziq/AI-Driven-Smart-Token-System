@@ -1,32 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   FiPlus,
   FiEdit2,
   FiTrash2,
-  FiSearch,
   FiUser,
   FiUserCheck,
-  FiUserX,
   FiShield,
   FiMail,
   FiPhone,
-  FiCalendar,
-  FiMoreVertical,
-  FiFilter,
 } from 'react-icons/fi';
 import {
   Card,
-  Badge,
   Button,
   SearchBar,
   Modal,
   Input,
   Select,
   ConfirmDialog,
-  Table,
+  Loader,
 } from '../../components/common';
 import toast from 'react-hot-toast';
+import api from '../../utils/api';
 
 const Users = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -35,106 +30,50 @@ const Users = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-
-  // Mock data
-  const [users, setUsers] = useState([
-    {
-      id: '1',
-      fullName: 'Ahmad Khan',
-      email: 'ahmad.khan@sqp.gov.pk',
-      phone: '0300-1234567',
-      cnic: '35201-1234567-1',
-      role: 'admin',
-      status: 'active',
-      createdAt: new Date('2024-01-15'),
-      lastLogin: new Date(Date.now() - 3600000),
-      tokensServed: 1250,
-    },
-    {
-      id: '2',
-      fullName: 'Fatima Ali',
-      email: 'fatima.ali@sqp.gov.pk',
-      phone: '0301-2345678',
-      cnic: '35201-2345678-2',
-      role: 'admin',
-      status: 'active',
-      createdAt: new Date('2024-02-20'),
-      lastLogin: new Date(Date.now() - 7200000),
-      tokensServed: 980,
-    },
-    {
-      id: '3',
-      fullName: 'Bilal Ahmed',
-      email: 'bilal.ahmed@sqp.gov.pk',
-      phone: '0302-3456789',
-      cnic: '35201-3456789-3',
-      role: 'operator',
-      status: 'active',
-      createdAt: new Date('2024-03-10'),
-      lastLogin: new Date(Date.now() - 86400000),
-      tokensServed: 750,
-    },
-    {
-      id: '4',
-      fullName: 'Zainab Hassan',
-      email: 'zainab.hassan@sqp.gov.pk',
-      phone: '0303-4567890',
-      cnic: '35201-4567890-4',
-      role: 'operator',
-      status: 'inactive',
-      createdAt: new Date('2024-04-05'),
-      lastLogin: new Date(Date.now() - 604800000),
-      tokensServed: 420,
-    },
-    {
-      id: '5',
-      fullName: 'Usman Malik',
-      email: 'usman.malik@sqp.gov.pk',
-      phone: '0304-5678901',
-      cnic: '35201-5678901-5',
-      role: 'superadmin',
-      status: 'active',
-      createdAt: new Date('2024-01-01'),
-      lastLogin: new Date(Date.now() - 1800000),
-      tokensServed: 0,
-    },
-    {
-      id: '6',
-      fullName: 'Sara Khan',
-      email: 'sara.khan@example.com',
-      phone: '0305-6789012',
-      cnic: '35201-6789012-6',
-      role: 'customer',
-      status: 'active',
-      createdAt: new Date('2024-05-15'),
-      lastLogin: new Date(Date.now() - 172800000),
-      tokensServed: 0,
-    },
-  ]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const roleOptions = [
     { value: 'all', label: 'All Roles' },
     { value: 'superadmin', label: 'Super Admin' },
     { value: 'admin', label: 'Admin' },
     { value: 'operator', label: 'Operator' },
-    { value: 'customer', label: 'Customer' },
+    { value: 'user', label: 'Customer' },
   ];
+
+  // Fetch users from backend
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/user/read');
+      setUsers(response.data);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to fetch users');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   const getRoleConfig = (role) => {
     const config = {
       superadmin: { color: 'bg-purple-100 text-purple-700', icon: FiShield, label: 'Super Admin' },
       admin: { color: 'bg-blue-100 text-blue-700', icon: FiUserCheck, label: 'Admin' },
       operator: { color: 'bg-green-100 text-green-700', icon: FiUser, label: 'Operator' },
-      customer: { color: 'bg-gray-100 text-gray-700', icon: FiUser, label: 'Customer' },
+      user: { color: 'bg-gray-100 text-gray-700', icon: FiUser, label: 'Customer' },
     };
-    return config[role] || config.customer;
+    return config[role] || config.user;
   };
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
-      user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.phone.includes(searchQuery);
+      user.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.phoneNumber?.includes(searchQuery);
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
     return matchesSearch && matchesRole;
   });
@@ -156,58 +95,63 @@ const Users = () => {
     setShowDeleteConfirm(true);
   };
 
-  const handleToggleStatus = (user) => {
-    setUsers(users.map(u =>
-      u.id === user.id ? { ...u, status: u.status === 'active' ? 'inactive' : 'active' } : u
-    ));
-    toast.success(`${user.fullName} ${user.status === 'active' ? 'deactivated' : 'activated'}`);
-  };
-
-  const handleSaveUser = (formData) => {
-    if (isEditing) {
-      setUsers(users.map(u =>
-        u.id === selectedUser.id ? { ...u, ...formData } : u
-      ));
-      toast.success('User updated successfully');
-    } else {
-      const newUser = {
-        id: Date.now().toString(),
-        ...formData,
-        status: 'active',
-        createdAt: new Date(),
-        lastLogin: null,
-        tokensServed: 0,
-      };
-      setUsers([...users, newUser]);
-      toast.success('User added successfully');
+  const handleSaveUser = async (formData) => {
+    try {
+      setSaving(true);
+      if (isEditing) {
+        await api.patch(`/user/update/${selectedUser._id}`, formData);
+        toast.success('User updated successfully');
+      } else {
+        await api.post('/user/create', formData);
+        toast.success('User created successfully');
+      }
+      setShowModal(false);
+      fetchUsers();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to save user');
+    } finally {
+      setSaving(false);
     }
-    setShowModal(false);
   };
 
-  const confirmDelete = () => {
-    setUsers(users.filter(u => u.id !== selectedUser.id));
-    toast.success('User deleted successfully');
-    setShowDeleteConfirm(false);
-    setSelectedUser(null);
+  const confirmDelete = async () => {
+    try {
+      await api.delete(`/user/delete/${selectedUser._id}`);
+      toast.success('User deleted successfully');
+      setShowDeleteConfirm(false);
+      setSelectedUser(null);
+      fetchUsers();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete user');
+    }
   };
 
   const stats = {
     totalUsers: users.length,
-    activeUsers: users.filter(u => u.status === 'active').length,
+    activeUsers: users.length,
     admins: users.filter(u => u.role === 'admin' || u.role === 'superadmin').length,
     operators: users.filter(u => u.role === 'operator').length,
   };
 
   const formatDate = (date) => {
     if (!date) return 'Never';
+    const d = new Date(date);
     const now = new Date();
-    const diff = now - date;
+    const diff = now - d;
 
     if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
     if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
     if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
-    return date.toLocaleDateString();
+    return d.toLocaleDateString();
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -321,8 +265,7 @@ const Users = () => {
                 <th className="text-left py-4 px-6 font-semibold text-gray-600">User</th>
                 <th className="text-left py-4 px-6 font-semibold text-gray-600">Contact</th>
                 <th className="text-left py-4 px-6 font-semibold text-gray-600">Role</th>
-                <th className="text-left py-4 px-6 font-semibold text-gray-600">Status</th>
-                <th className="text-left py-4 px-6 font-semibold text-gray-600">Last Login</th>
+                <th className="text-left py-4 px-6 font-semibold text-gray-600">Joined</th>
                 <th className="text-right py-4 px-6 font-semibold text-gray-600">Actions</th>
               </tr>
             </thead>
@@ -333,7 +276,7 @@ const Users = () => {
 
                 return (
                   <motion.tr
-                    key={user.id}
+                    key={user._id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.03 }}
@@ -343,7 +286,7 @@ const Users = () => {
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-pakistan-green rounded-full flex items-center justify-center">
                           <span className="text-white font-semibold text-sm">
-                            {user.fullName.split(' ').map(n => n[0]).join('')}
+                            {user.fullName?.split(' ').map(n => n[0]).join('')}
                           </span>
                         </div>
                         <div>
@@ -360,7 +303,7 @@ const Users = () => {
                         </p>
                         <p className="text-sm text-gray-600 flex items-center gap-1.5">
                           <FiPhone className="w-3.5 h-3.5 text-gray-400" />
-                          {user.phone}
+                          {user.phoneNumber}
                         </p>
                       </div>
                     </td>
@@ -371,24 +314,7 @@ const Users = () => {
                       </span>
                     </td>
                     <td className="py-4 px-6">
-                      <button
-                        onClick={() => handleToggleStatus(user)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                          user.status === 'active'
-                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                            : 'bg-red-100 text-red-700 hover:bg-red-200'
-                        }`}
-                      >
-                        {user.status === 'active' ? (
-                          <FiUserCheck className="w-3.5 h-3.5" />
-                        ) : (
-                          <FiUserX className="w-3.5 h-3.5" />
-                        )}
-                        {user.status === 'active' ? 'Active' : 'Inactive'}
-                      </button>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className="text-sm text-gray-600">{formatDate(user.lastLogin)}</span>
+                      <span className="text-sm text-gray-600">{formatDate(user.createdAt)}</span>
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex items-center justify-end gap-1">
@@ -429,6 +355,7 @@ const Users = () => {
         user={selectedUser}
         isEditing={isEditing}
         roleOptions={roleOptions.filter(r => r.value !== 'all')}
+        saving={saving}
       />
 
       {/* Delete Confirmation */}
@@ -446,32 +373,45 @@ const Users = () => {
 };
 
 // User Modal Component
-const UserModal = ({ isOpen, onClose, onSave, user, isEditing, roleOptions }) => {
+const UserModal = ({ isOpen, onClose, onSave, user, isEditing, roleOptions, saving }) => {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
-    phone: '',
+    phoneNumber: '',
     cnic: '',
-    role: 'operator',
+    role: 'user',
     password: '',
   });
 
-  useState(() => {
+  useEffect(() => {
     if (user) {
       setFormData({
-        fullName: user.fullName,
-        email: user.email,
-        phone: user.phone,
-        cnic: user.cnic,
-        role: user.role,
+        fullName: user.fullName || '',
+        email: user.email || '',
+        phoneNumber: user.phoneNumber || '',
+        cnic: user.cnic || '',
+        role: user.role || 'user',
+        password: '',
+      });
+    } else {
+      setFormData({
+        fullName: '',
+        email: '',
+        phoneNumber: '',
+        cnic: '',
+        role: 'user',
         password: '',
       });
     }
-  }, [user]);
+  }, [user, isOpen]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(formData);
+    const dataToSend = { ...formData };
+    if (isEditing && !formData.password) {
+      delete dataToSend.password;
+    }
+    onSave(dataToSend);
   };
 
   return (
@@ -498,8 +438,8 @@ const UserModal = ({ isOpen, onClose, onSave, user, isEditing, roleOptions }) =>
         <div className="grid grid-cols-2 gap-4">
           <Input
             label="Phone"
-            value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            value={formData.phoneNumber}
+            onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
             placeholder="03XX-XXXXXXX"
             required
           />
@@ -517,20 +457,18 @@ const UserModal = ({ isOpen, onClose, onSave, user, isEditing, roleOptions }) =>
           value={formData.role}
           onChange={(e) => setFormData({ ...formData, role: e.target.value })}
         />
-        {!isEditing && (
-          <Input
-            label="Password"
-            type="password"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            required={!isEditing}
-          />
-        )}
+        <Input
+          label={isEditing ? "Password (leave blank to keep current)" : "Password"}
+          type="password"
+          value={formData.password}
+          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+          required={!isEditing}
+        />
         <div className="flex gap-3 pt-4">
           <Button type="button" variant="outline" fullWidth onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" fullWidth>
+          <Button type="submit" fullWidth loading={saving}>
             {isEditing ? 'Update User' : 'Add User'}
           </Button>
         </div>
