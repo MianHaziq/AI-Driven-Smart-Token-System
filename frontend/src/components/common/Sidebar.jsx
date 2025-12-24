@@ -26,7 +26,6 @@ const Sidebar = ({ isOpen, onClose, onLogout }) => {
     { path: ROUTES.MANAGE_COUNTERS, label: 'Counters', icon: FiMonitor },
     { path: ROUTES.ANALYTICS, label: 'Analytics', icon: FiBarChart2 },
     { path: ROUTES.USER_MANAGEMENT, label: 'Users', icon: FiUsers },
-    { path: ROUTES.AUDIT_LOGS, label: 'Audit Logs', icon: FiFileText },
     { path: ROUTES.SYSTEM_SETTINGS, label: 'Settings', icon: FiSettings },
   ];
 

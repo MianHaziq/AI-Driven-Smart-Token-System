@@ -34,6 +34,10 @@ import {
   Dashboard as AdminDashboard,
   ManageQueue,
   Analytics,
+  Services as AdminServices,
+  Counters,
+  Users,
+  Settings as AdminSettings,
 } from './pages/admin';
 
 // Protected Route Component
@@ -164,7 +168,11 @@ function App() {
         >
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/queue" element={<ManageQueue />} />
+          <Route path="/admin/services" element={<AdminServices />} />
+          <Route path="/admin/counters" element={<Counters />} />
           <Route path="/admin/analytics" element={<Analytics />} />
+          <Route path="/admin/users" element={<Users />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
         </Route>
 
         {/* Catch all - redirect to home */}
