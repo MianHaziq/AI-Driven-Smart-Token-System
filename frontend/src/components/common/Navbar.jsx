@@ -21,6 +21,7 @@ import {
   FiThermometer,
   FiDollarSign,
   FiClock,
+  FiList,
 } from 'react-icons/fi';
 import { ROUTES, APP_NAME, SERVICES } from '../../utils/constants';
 import useAuthStore from '../../store/authStore';
@@ -298,6 +299,22 @@ const Navbar = () => {
                         >
                           <FiUser className="w-4 h-4 !mr-3" />
                           Profile
+                        </Link>
+                        <Link
+                          to={ROUTES.MY_TOKENS}
+                          onClick={() => setIsProfileOpen(false)}
+                          className="flex items-center !px-4 !py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          <FiList className="w-4 h-4 !mr-3" />
+                          My Tokens
+                        </Link>
+                        <Link
+                          to={ROUTES.TOKEN_HISTORY}
+                          onClick={() => setIsProfileOpen(false)}
+                          className="flex items-center !px-4 !py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          <FiClock className="w-4 h-4 !mr-3" />
+                          History
                         </Link>
                         <Link
                           to={ROUTES.SETTINGS}

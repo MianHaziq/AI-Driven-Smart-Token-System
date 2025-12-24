@@ -1,39 +1,80 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
 import {
   FiUsers,
   FiClock,
   FiCheckCircle,
   FiAlertCircle,
-  FiTrendingUp,
   FiPlay,
-  FiSkipForward,
-  FiActivity,
-  FiZap,
-  FiTarget,
-  FiAward,
   FiRefreshCw,
   FiChevronRight,
   FiMonitor,
-  FiBell,
+  FiArrowLeft,
+  FiMapPin,
+  FiGrid,
+  FiCreditCard,
+  FiGlobe,
+  FiTruck,
+  FiZap,
+  FiThermometer,
+  FiDollarSign,
+  FiNavigation,
+  FiCoffee,
+  FiActivity,
 } from 'react-icons/fi';
 import {
   Card,
   Badge,
   Button,
   ConfirmDialog,
+  SearchBar,
+  Loader,
 } from '../../components/common';
-import { ROUTES } from '../../utils/constants';
-import { formatTime } from '../../utils/helpers';
+import { SERVICES } from '../../utils/constants';
+import centersData from '../../data/centers.json';
+import useTokenStore from '../../store/tokenStore';
+import useCounterStore from '../../store/counterStore';
 import toast from 'react-hot-toast';
+
+// Icon mapping for services
+const serviceIconMap = {
+  FiCreditCard: FiCreditCard,
+  FiGlobe: FiGlobe,
+  FiTruck: FiTruck,
+  FiZap: FiZap,
+  FiThermometer: FiThermometer,
+  FiDollarSign: FiDollarSign,
+};
 
 const AdminDashboard = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [step, setStep] = useState(1); // 1: Service, 2: Center, 3: Queue Dashboard
+  const [selectedService, setSelectedService] = useState(null);
+  const [selectedCenter, setSelectedCenter] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
   const [selectedToken, setSelectedToken] = useState(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [localCenters, setLocalCenters] = useState([]);
+
+  // Stores
+  const {
+    tokens,
+    queueStats,
+    isLoading: tokensLoading,
+    fetchTokens,
+    fetchQueueStats,
+    callNextToken,
+    completeToken,
+    markNoShow,
+  } = useTokenStore();
+
+  const {
+    counters,
+    isLoading: countersLoading,
+    fetchCounters,
+    updateCounterStatus,
+  } = useCounterStore();
 
   // Update time every second
   useEffect(() => {
@@ -41,81 +82,57 @@ const AdminDashboard = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Mock data
-  const stats = {
-    totalToday: 156,
-    currentlyWaiting: 23,
-    avgWaitTime: 18,
-    noShows: 5,
-    completed: 128,
-    efficiency: 94,
+  // Load local centers data
+  useEffect(() => {
+    const loadedCenters = centersData.centers.map(center => ({
+      ...center,
+      queueLength: Math.floor(Math.random() * 30) + 5,
+      avgWaitTime: Math.floor(Math.random() * 50) + 15,
+      isOpen: true,
+    }));
+    setLocalCenters(loadedCenters);
+  }, []);
+
+  // Fetch data when center is selected
+  useEffect(() => {
+    if (selectedCenter && selectedService) {
+      fetchTokens();
+      fetchCounters();
+      fetchQueueStats();
+    }
+  }, [selectedCenter, selectedService, fetchTokens, fetchCounters, fetchQueueStats]);
+
+  // Filter centers by selected service
+  const filteredCenters = localCenters.filter((center) => {
+    const matchesService = selectedService ? center.serviceCategory === selectedService.id : true;
+    const matchesSearch = center.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      center.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      center.city.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesService && matchesSearch;
+  });
+
+  const handleSelectService = (service) => {
+    setSelectedService(service);
+    setStep(2);
   };
 
-  const currentServing = {
-    tokenNumber: 'A-096',
-    customerName: 'Muhammad Ali',
-    service: 'CNIC Renewal',
-    counter: 1,
-    startedAt: new Date(Date.now() - 300000),
-    phone: '0300-1234567',
-    priority: 'normal',
+  const handleSelectCenter = (center) => {
+    setSelectedCenter(center);
+    setStep(3);
   };
 
-  const queue = [
-    { id: '1', tokenNumber: 'A-097', customerName: 'Fatima Hassan', service: 'CNIC - New', waitTime: 15, priority: 'normal' },
-    { id: '2', tokenNumber: 'A-098', customerName: 'Ahmed Raza', service: 'CNIC Renewal', waitTime: 12, priority: 'senior' },
-    { id: '3', tokenNumber: 'A-099', customerName: 'Sara Khan', service: 'CNIC Modification', waitTime: 10, priority: 'normal' },
-    { id: '4', tokenNumber: 'A-100', customerName: 'Usman Ali', service: 'CNIC - New', waitTime: 8, priority: 'disabled' },
-    { id: '5', tokenNumber: 'A-101', customerName: 'Ayesha Malik', service: 'CNIC Renewal', waitTime: 5, priority: 'normal' },
-  ];
-
-  const recentActivity = [
-    { id: '1', action: 'Token A-096 called to Counter 1', time: new Date(Date.now() - 300000), type: 'called', user: 'Admin 1' },
-    { id: '2', action: 'Token A-095 completed successfully', time: new Date(Date.now() - 600000), type: 'completed', user: 'Admin 2' },
-    { id: '3', action: 'Token A-094 marked as no-show', time: new Date(Date.now() - 900000), type: 'no-show', user: 'Admin 1' },
-    { id: '4', action: 'Token A-093 completed successfully', time: new Date(Date.now() - 1200000), type: 'completed', user: 'Admin 3' },
-    { id: '5', action: 'New token A-102 issued', time: new Date(Date.now() - 1500000), type: 'issued', user: 'System' },
-  ];
-
-  const counters = [
-    { id: '1', name: 'Counter 1', status: 'serving', currentToken: 'A-096', operator: 'Admin 1', tokensToday: 42 },
-    { id: '2', name: 'Counter 2', status: 'available', currentToken: null, operator: 'Admin 2', tokensToday: 38 },
-    { id: '3', name: 'Counter 3', status: 'break', currentToken: null, operator: 'Admin 3', tokensToday: 35 },
-    { id: '4', name: 'Counter 4', status: 'offline', currentToken: null, operator: 'Unassigned', tokensToday: 0 },
-  ];
-
-  const getPriorityConfig = (priority) => {
-    const config = {
-      normal: { color: 'bg-gray-100 text-gray-700', label: 'Normal' },
-      senior: { color: 'bg-purple-100 text-purple-700', label: 'Senior' },
-      disabled: { color: 'bg-blue-100 text-blue-700', label: 'PWD' },
-      vip: { color: 'bg-amber-100 text-amber-700', label: 'VIP' },
-    };
-    return config[priority] || config.normal;
-  };
-
-  const getCounterStatusConfig = (status) => {
-    const config = {
-      serving: { color: 'bg-green-500', ring: 'ring-green-200', text: 'text-green-700', bg: 'bg-green-50' },
-      available: { color: 'bg-blue-500', ring: 'ring-blue-200', text: 'text-blue-700', bg: 'bg-blue-50' },
-      break: { color: 'bg-amber-500', ring: 'ring-amber-200', text: 'text-amber-700', bg: 'bg-amber-50' },
-      offline: { color: 'bg-gray-400', ring: 'ring-gray-200', text: 'text-gray-500', bg: 'bg-gray-50' },
-    };
-    return config[status] || config.offline;
-  };
-
-  const getActivityIcon = (type) => {
-    switch (type) {
-      case 'called': return <FiPlay className="w-4 h-4 text-blue-500" />;
-      case 'completed': return <FiCheckCircle className="w-4 h-4 text-green-500" />;
-      case 'no-show': return <FiAlertCircle className="w-4 h-4 text-red-500" />;
-      case 'issued': return <FiZap className="w-4 h-4 text-purple-500" />;
-      default: return <FiActivity className="w-4 h-4 text-gray-500" />;
+  const handleGoBack = () => {
+    if (step === 3) {
+      setSelectedCenter(null);
+      setStep(2);
+    } else if (step === 2) {
+      setSelectedService(null);
+      setStep(1);
     }
   };
 
-  const handleAction = (action, token = null) => {
-    setSelectedToken(token);
+  const handleAction = (action, token = null, counterId = null) => {
+    setSelectedToken({ ...token, counterId });
     setConfirmAction(action);
     setShowConfirm(true);
   };
@@ -123,15 +140,62 @@ const AdminDashboard = () => {
   const executeAction = async () => {
     setShowConfirm(false);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    try {
+      if (confirmAction === 'call') {
+        const counterId = selectedToken?.counterId;
+        const counter = counters.find(c => c._id === counterId || c.id === counterId);
 
-    if (confirmAction === 'call') {
-      toast.success(`Token ${selectedToken?.tokenNumber || 'A-097'} called to counter`);
-    } else if (confirmAction === 'complete') {
-      toast.success('Token completed successfully');
-    } else if (confirmAction === 'noshow') {
-      toast.error('Token marked as no-show');
+        if (counter) {
+          const result = await callNextToken(counter._id || counter.id);
+          if (result.success) {
+            toast.success(`Token called to ${counter.name}`);
+            fetchTokens();
+            fetchCounters();
+          } else {
+            toast.error(result.message || 'Failed to call token');
+          }
+        }
+      } else if (confirmAction === 'complete') {
+        const tokenId = selectedToken?._id || selectedToken?.id;
+        if (tokenId) {
+          const result = await completeToken(tokenId);
+          if (result.success) {
+            toast.success('Token completed successfully');
+            fetchTokens();
+            fetchCounters();
+          } else {
+            toast.error(result.message || 'Failed to complete token');
+          }
+        }
+      } else if (confirmAction === 'noshow') {
+        const tokenId = selectedToken?._id || selectedToken?.id;
+        if (tokenId) {
+          const result = await markNoShow(tokenId);
+          if (result.success) {
+            toast.error('Token marked as no-show');
+            fetchTokens();
+            fetchCounters();
+          } else {
+            toast.error(result.message || 'Failed to mark as no-show');
+          }
+        }
+      } else if (confirmAction === 'break') {
+        const counterId = selectedToken?.counterId;
+        const counter = counters.find(c => c._id === counterId || c.id === counterId);
+
+        if (counter) {
+          const newStatus = counter.status === 'break' ? 'available' : 'break';
+          const result = await updateCounterStatus(counter._id || counter.id, newStatus);
+          if (result.success) {
+            toast.success('Counter status updated');
+            fetchCounters();
+          } else {
+            toast.error(result.message || 'Failed to update status');
+          }
+        }
+      }
+    } catch (error) {
+      toast.error('Action failed');
     }
 
     setSelectedToken(null);
@@ -139,436 +203,579 @@ const AdminDashboard = () => {
   };
 
   const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsRefreshing(false);
+    await Promise.all([fetchTokens(), fetchCounters(), fetchQueueStats()]);
     toast.success('Dashboard refreshed');
   };
 
+  const getPriorityConfig = (priority) => {
+    const config = {
+      normal: { color: 'bg-gray-100 text-gray-700', label: 'Normal' },
+      senior: { color: 'bg-purple-100 text-purple-700', label: 'Senior' },
+      disabled: { color: 'bg-blue-100 text-blue-700', label: 'PWD' },
+      pwd: { color: 'bg-blue-100 text-blue-700', label: 'PWD' },
+      vip: { color: 'bg-amber-100 text-amber-700', label: 'VIP' },
+    };
+    return config[priority] || config.normal;
+  };
+
+  const getCounterStatusConfig = (status) => {
+    const config = {
+      serving: { color: 'bg-green-500', ring: 'ring-green-200', text: 'text-green-700', bg: 'bg-green-50', label: 'Serving' },
+      available: { color: 'bg-blue-500', ring: 'ring-blue-200', text: 'text-blue-700', bg: 'bg-blue-50', label: 'Available' },
+      break: { color: 'bg-amber-500', ring: 'ring-amber-200', text: 'text-amber-700', bg: 'bg-amber-50', label: 'On Break' },
+      offline: { color: 'bg-gray-400', ring: 'ring-gray-200', text: 'text-gray-500', bg: 'bg-gray-50', label: 'Offline' },
+    };
+    return config[status] || config.offline;
+  };
+
+  // Get waiting tokens
+  const waitingTokens = tokens.filter(t => t.status === 'waiting');
+  const servingTokens = tokens.filter(t => t.status === 'serving');
+
+  // Calculate stats
+  const stats = {
+    totalToday: queueStats?.total || tokens.length,
+    currentlyWaiting: queueStats?.waiting || waitingTokens.length,
+    serving: queueStats?.serving || servingTokens.length,
+    completed: queueStats?.completed || 0,
+  };
+
+  // Use real counters or fallback
+  const displayCounters = counters.length > 0 ? counters : [
+    { id: 1, _id: '1', name: 'Counter 1', status: 'available', currentToken: null, operator: { name: 'Operator 1' }, tokensServed: 0 },
+    { id: 2, _id: '2', name: 'Counter 2', status: 'available', currentToken: null, operator: { name: 'Operator 2' }, tokensServed: 0 },
+  ];
+
+  const isLoading = tokensLoading || countersLoading;
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-            <Badge variant="success" dot>Live</Badge>
-          </div>
-          <p className="text-gray-600">
-            {currentTime.toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
-            <span className="mx-2">•</span>
-            <span className="font-medium text-pakistan-green">
-              {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Button
-            variant="outline"
-            icon={FiRefreshCw}
-            onClick={handleRefresh}
-            loading={isRefreshing}
-          >
-            Refresh
-          </Button>
-          <Button
-            icon={FiPlay}
-            size="lg"
-            onClick={() => handleAction('call', queue[0])}
-          >
-            Call Next Token
-          </Button>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 bg-pakistan-green-50 rounded-xl flex items-center justify-center">
-              <FiUsers className="w-5 h-5 text-pakistan-green" />
-            </div>
-            <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+12%</span>
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{stats.totalToday}</p>
-          <p className="text-sm text-gray-500">Total Today</p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
-              <FiClock className="w-5 h-5 text-amber-600" />
-            </div>
-            <motion.div
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="w-2 h-2 bg-amber-500 rounded-full"
-            />
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{stats.currentlyWaiting}</p>
-          <p className="text-sm text-gray-500">Waiting</p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-              <FiTarget className="w-5 h-5 text-blue-600" />
-            </div>
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{stats.avgWaitTime}m</p>
-          <p className="text-sm text-gray-500">Avg Wait</p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-          className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center">
-              <FiAlertCircle className="w-5 h-5 text-red-600" />
-            </div>
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{stats.noShows}</p>
-          <p className="text-sm text-gray-500">No Shows</p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
-              <FiCheckCircle className="w-5 h-5 text-green-600" />
-            </div>
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{stats.completed}</p>
-          <p className="text-sm text-gray-500">Completed</p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35 }}
-          className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
-              <FiAward className="w-5 h-5 text-purple-600" />
-            </div>
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{stats.efficiency}%</p>
-          <p className="text-sm text-gray-500">Efficiency</p>
-        </motion.div>
-      </div>
-
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Main Content - Left Side */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Now Serving Card */}
+      <AnimatePresence mode="wait">
+        {/* Step 1: Select Service */}
+        {step === 1 && (
           <motion.div
+            key="step1"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="space-y-6"
           >
-            <Card className="overflow-hidden border-0 shadow-lg">
-              <div className="bg-gradient-pakistan p-6">
-                <div className="flex items-start justify-between mb-6">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-white/70 text-sm">Now Serving at Counter {currentServing.counter}</span>
-                      <motion.div
-                        animate={{ opacity: [1, 0.5, 1] }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                        className="w-2 h-2 bg-green-400 rounded-full"
-                      />
-                    </div>
-                    <p className="text-5xl font-bold text-white">{currentServing.tokenNumber}</p>
-                  </div>
-                  <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
-                    <FiActivity className="w-3 h-3 mr-1" />
-                    Active
-                  </Badge>
+            {/* Header */}
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-3 mb-1">
+                  <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+                  <Badge variant="success" dot>Live</Badge>
                 </div>
-
-                <div className="grid grid-cols-3 gap-4 p-4 bg-white/10 backdrop-blur-sm rounded-xl mb-6">
-                  <div>
-                    <p className="text-white/60 text-xs uppercase tracking-wide">Customer</p>
-                    <p className="text-white font-medium">{currentServing.customerName}</p>
-                  </div>
-                  <div>
-                    <p className="text-white/60 text-xs uppercase tracking-wide">Service</p>
-                    <p className="text-white font-medium">{currentServing.service}</p>
-                  </div>
-                  <div>
-                    <p className="text-white/60 text-xs uppercase tracking-wide">Duration</p>
-                    <p className="text-white font-medium">
-                      {Math.floor((Date.now() - currentServing.startedAt.getTime()) / 60000)}m
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <Button
-                    variant="gold"
-                    className="flex-1"
-                    icon={FiCheckCircle}
-                    onClick={() => handleAction('complete')}
-                  >
-                    Complete
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="border-white/30 text-white hover:bg-white/10"
-                    icon={FiAlertCircle}
-                    onClick={() => handleAction('noshow')}
-                  >
-                    No Show
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="border-white/30 text-white hover:bg-white/10"
-                    icon={FiSkipForward}
-                  >
-                    Skip
-                  </Button>
-                </div>
+                <p className="text-gray-600">Select a service to manage queues</p>
               </div>
-            </Card>
-          </motion.div>
-
-          {/* Queue List */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <Card className="border-0 shadow-lg">
-              <Card.Header>
-                <div className="flex items-center justify-between">
-                  <Card.Title subtitle={`${queue.length} customers waiting`}>
-                    <span className="flex items-center gap-2">
-                      <FiUsers className="w-5 h-5 text-pakistan-green" />
-                      Queue
-                    </span>
-                  </Card.Title>
-                  <Link to={ROUTES.MANAGE_QUEUE}>
-                    <Button variant="ghost" size="sm" icon={FiChevronRight} iconPosition="right">
-                      View All
-                    </Button>
-                  </Link>
-                </div>
-              </Card.Header>
-
-              <div className="space-y-3">
-                {queue.map((item, index) => (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.5 + index * 0.05 }}
-                    className={`
-                      group flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer
-                      ${index === 0
-                        ? 'bg-pakistan-green-50 border-pakistan-green/30 hover:border-pakistan-green'
-                        : 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-sm'
-                      }
-                    `}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`
-                        w-12 h-12 rounded-xl flex items-center justify-center font-bold text-sm
-                        ${index === 0
-                          ? 'bg-pakistan-green text-white shadow-lg shadow-pakistan-green/30'
-                          : 'bg-gray-100 text-pakistan-green'
-                        }
-                      `}>
-                        {item.tokenNumber}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold text-gray-900">{item.customerName}</p>
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getPriorityConfig(item.priority).color}`}>
-                            {getPriorityConfig(item.priority).label}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-500">{item.service}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="text-sm font-medium text-gray-900">{item.waitTime}m</p>
-                        <p className="text-xs text-gray-500">waiting</p>
-                      </div>
-                      {index === 0 && (
-                        <Button
-                          size="sm"
-                          icon={FiPlay}
-                          onClick={() => handleAction('call', item)}
-                        >
-                          Call
-                        </Button>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
+              <div className="text-right">
+                <p className="text-sm text-gray-500">
+                  {currentTime.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </p>
+                <p className="text-lg font-semibold text-pakistan-green">
+                  {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                </p>
               </div>
-            </Card>
-          </motion.div>
-        </div>
+            </div>
 
-        {/* Sidebar - Right Side */}
-        <div className="space-y-6">
-          {/* Counter Status */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-          >
-            <Card className="border-0 shadow-lg">
-              <Card.Header>
-                <Card.Title>
+            {/* Service Grid */}
+            <Card className="shadow-xl border-0">
+              <Card.Header border={false}>
+                <Card.Title subtitle="Choose a service category to manage">
                   <span className="flex items-center gap-2">
-                    <FiMonitor className="w-5 h-5 text-pakistan-green" />
-                    Counter Status
+                    <FiGrid className="w-5 h-5 text-pakistan-green" />
+                    Select Service
                   </span>
                 </Card.Title>
               </Card.Header>
-              <div className="space-y-3">
-                {counters.map((counter) => {
-                  const statusConfig = getCounterStatusConfig(counter.status);
+
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {SERVICES.map((service, index) => {
+                  const IconComponent = serviceIconMap[service.icon] || FiGrid;
+                  const centerCount = localCenters.filter(c => c.serviceCategory === service.id).length;
+
                   return (
-                    <div
-                      key={counter.id}
-                      className={`flex items-center justify-between p-4 rounded-xl ${statusConfig.bg} transition-all hover:scale-[1.02]`}
+                    <motion.div
+                      key={service.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      onClick={() => handleSelectService(service)}
+                      className="group relative p-5 border-2 rounded-2xl cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-pakistan-green/10 border-gray-100 hover:border-pakistan-green/50 bg-white"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${statusConfig.color} ring-4 ${statusConfig.ring}`} />
-                        <div>
-                          <p className="font-semibold text-gray-900">{counter.name}</p>
-                          <p className="text-xs text-gray-500">{counter.operator}</p>
+                      <div className="flex items-start gap-4">
+                        <div className={`w-14 h-14 ${service.color} rounded-xl flex items-center justify-center shrink-0`}>
+                          <IconComponent className="w-7 h-7 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">{service.emoji}</span>
+                            <h3 className="font-semibold text-gray-900 group-hover:text-pakistan-green transition-colors">
+                              {service.name}
+                            </h3>
+                          </div>
+                          <p className="text-sm text-gray-500 mt-1">
+                            {service.subServices.length} services • {centerCount} centers
+                          </p>
+                        </div>
+                        <div className="shrink-0 self-center">
+                          <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-pakistan-green group-hover:translate-x-1 transition-all" />
                         </div>
                       </div>
-                      <div className="text-right">
-                        <span className={`text-xs font-medium ${statusConfig.text} capitalize`}>
-                          {counter.status}
-                        </span>
-                        {counter.currentToken && (
-                          <p className="text-lg font-bold text-pakistan-green">{counter.currentToken}</p>
-                        )}
-                        {!counter.currentToken && counter.status !== 'offline' && (
-                          <p className="text-xs text-gray-500">{counter.tokensToday} served</p>
-                        )}
-                      </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <Link to={ROUTES.MANAGE_COUNTERS}>
-                  <Button variant="outline" fullWidth icon={FiChevronRight} iconPosition="right">
-                    Manage Counters
-                  </Button>
-                </Link>
-              </div>
             </Card>
           </motion.div>
+        )}
 
-          {/* Recent Activity */}
+        {/* Step 2: Select Center */}
+        {step === 2 && selectedService && (
           <motion.div
+            key="step2"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="space-y-6"
           >
-            <Card className="border-0 shadow-lg">
-              <Card.Header>
-                <Card.Title>
-                  <span className="flex items-center gap-2">
-                    <FiBell className="w-5 h-5 text-pakistan-green" />
-                    Recent Activity
-                  </span>
-                </Card.Title>
+            {/* Header */}
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={FiArrowLeft}
+                onClick={handleGoBack}
+                className="!p-2"
+              />
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-1">
+                  <h1 className="text-2xl font-bold text-gray-900">{selectedService.name}</h1>
+                  <span className="text-2xl">{selectedService.emoji}</span>
+                </div>
+                <p className="text-gray-600">Select a center to manage queue</p>
+              </div>
+            </div>
+
+            <Card className="shadow-xl border-0">
+              <Card.Header border={false}>
+                <div className="flex items-center justify-between">
+                  <Card.Title subtitle={`${filteredCenters.length} centers available`}>
+                    <span className="flex items-center gap-2">
+                      <FiMapPin className="w-5 h-5 text-pakistan-green" />
+                      Select Center
+                    </span>
+                  </Card.Title>
+                </div>
               </Card.Header>
+
+              <SearchBar
+                placeholder="Search by center name, city..."
+                value={searchQuery}
+                onChange={setSearchQuery}
+                className="mb-6"
+              />
+
               <div className="space-y-4">
-                {recentActivity.map((activity, index) => (
-                  <motion.div
-                    key={activity.id}
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.7 + index * 0.05 }}
-                    className="flex items-start gap-3"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
-                      {getActivityIcon(activity.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-900 truncate">{activity.action}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <p className="text-xs text-gray-500">{formatTime(activity.time)}</p>
-                        <span className="text-xs text-gray-400">•</span>
-                        <p className="text-xs text-gray-500">{activity.user}</p>
+                {filteredCenters.length === 0 ? (
+                  <div className="text-center py-12">
+                    <FiMapPin className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">No centers found for this service</p>
+                  </div>
+                ) : (
+                  filteredCenters.map((center, index) => (
+                    <motion.div
+                      key={center.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      onClick={() => handleSelectCenter(center)}
+                      className="group relative p-5 border-2 rounded-2xl cursor-pointer transition-all duration-300 hover:shadow-lg border-gray-100 hover:border-pakistan-green/50 bg-white"
+                    >
+                      <div className="flex gap-4">
+                        <div className="shrink-0">
+                          <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-pakistan-green-50 text-pakistan-green group-hover:bg-pakistan-green group-hover:text-white transition-all">
+                            <FiMapPin className="w-6 h-6" />
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-gray-900 text-lg group-hover:text-pakistan-green transition-colors">
+                              {center.name}
+                            </h3>
+                            <Badge variant={center.isOpen ? 'success' : 'danger'} dot size="sm">
+                              {center.isOpen ? 'Open' : 'Closed'}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-gray-500 flex items-center">
+                            <FiNavigation className="w-3.5 h-3.5 mr-1.5 shrink-0" />
+                            {center.address}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-3 mt-3">
+                            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-lg text-sm">
+                              <FiUsers className="w-4 h-4 text-gray-500" />
+                              <span className="font-medium">{center.queueLength} in queue</span>
+                            </span>
+                            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-sm">
+                              <FiClock className="w-4 h-4" />
+                              <span className="font-medium">~{center.avgWaitTime} min</span>
+                            </span>
+                            <span className="flex items-center gap-1.5 text-sm text-gray-500">
+                              <FiMapPin className="w-3.5 h-3.5" />
+                              {center.city}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="shrink-0 self-center">
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gray-100 text-gray-400 group-hover:bg-pakistan-green group-hover:text-white transition-all">
+                            <FiChevronRight className="w-5 h-5" />
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  ))
+                )}
               </div>
             </Card>
           </motion.div>
+        )}
 
-          {/* Quick Stats */}
+        {/* Step 3: Queue Dashboard */}
+        {step === 3 && selectedCenter && (
           <motion.div
+            key="step3"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="space-y-6"
           >
-            <Card className="bg-gradient-to-br from-pakistan-green to-pakistan-green-light text-white border-0 shadow-lg overflow-hidden">
-              <div className="relative">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
-                <div className="relative text-center py-2">
-                  <FiTrendingUp className="w-10 h-10 mx-auto mb-3 opacity-80" />
-                  <p className="text-white/70 text-sm mb-1">Peak Hour Today</p>
-                  <p className="text-3xl font-bold">12:00 PM</p>
-                  <p className="text-sm text-white/70 mt-1">42 tokens/hour</p>
-                  <div className="mt-4 pt-4 border-t border-white/20">
-                    <Link to={ROUTES.ANALYTICS}>
-                      <Button
-                        variant="outline"
-                        className="border-white/30 text-white hover:bg-white/10"
-                        fullWidth
-                      >
-                        View Analytics
-                      </Button>
-                    </Link>
+            {/* Header */}
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={FiArrowLeft}
+                  onClick={handleGoBack}
+                  className="!p-2"
+                />
+                <div>
+                  <div className="flex items-center gap-3 mb-1">
+                    <h1 className="text-xl font-bold text-gray-900">{selectedCenter.name}</h1>
+                    <Badge variant="success" dot>Live</Badge>
                   </div>
+                  <p className="text-sm text-gray-600 flex items-center gap-2">
+                    <span className="text-lg">{selectedService.emoji}</span>
+                    {selectedService.name} • {selectedCenter.city}
+                  </p>
                 </div>
               </div>
-            </Card>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  icon={FiRefreshCw}
+                  onClick={handleRefresh}
+                  loading={isLoading}
+                >
+                  Refresh
+                </Button>
+              </div>
+            </div>
+
+            {isLoading && tokens.length === 0 ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader size="lg" />
+              </div>
+            ) : (
+              <>
+                {/* Stats Cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-10 h-10 bg-pakistan-green-50 rounded-xl flex items-center justify-center">
+                        <FiUsers className="w-5 h-5 text-pakistan-green" />
+                      </div>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900">{stats.totalToday}</p>
+                    <p className="text-sm text-gray-500">Total Today</p>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15 }}
+                    className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
+                        <FiClock className="w-5 h-5 text-amber-600" />
+                      </div>
+                      <motion.div
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        className="w-2 h-2 bg-amber-500 rounded-full"
+                      />
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900">{stats.currentlyWaiting}</p>
+                    <p className="text-sm text-gray-500">Waiting</p>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                        <FiActivity className="w-5 h-5 text-blue-600" />
+                      </div>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900">{stats.serving}</p>
+                    <p className="text-sm text-gray-500">Serving</p>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.25 }}
+                    className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+                        <FiCheckCircle className="w-5 h-5 text-green-600" />
+                      </div>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900">{stats.completed}</p>
+                    <p className="text-sm text-gray-500">Completed</p>
+                  </motion.div>
+                </div>
+
+                {/* Counters */}
+                <div className="grid lg:grid-cols-2 gap-6">
+                  {displayCounters.map((counter, idx) => {
+                    const statusConfig = getCounterStatusConfig(counter.status);
+                    const counterId = counter._id || counter.id;
+
+                    return (
+                      <motion.div
+                        key={counterId}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 + idx * 0.1 }}
+                      >
+                        <Card className={`overflow-hidden border-2 ${counter.status === 'serving' ? 'border-green-200' : counter.status === 'break' ? 'border-amber-200' : 'border-gray-100'} shadow-lg`}>
+                          {/* Counter Header */}
+                          <div className={`${statusConfig.bg} p-4 border-b ${counter.status === 'serving' ? 'border-green-200' : 'border-gray-100'}`}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-3 h-3 rounded-full ${statusConfig.color} ring-4 ${statusConfig.ring}`} />
+                                <div>
+                                  <h3 className="font-bold text-gray-900">{counter.name}</h3>
+                                  <p className="text-xs text-gray-500">{counter.operator?.name || 'No operator'}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge variant={counter.status === 'serving' ? 'success' : counter.status === 'break' ? 'warning' : 'info'}>
+                                  {statusConfig.label}
+                                </Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  icon={counter.status === 'break' ? FiPlay : FiCoffee}
+                                  onClick={() => handleAction('break', null, counterId)}
+                                  className="!p-2"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Counter Body */}
+                          <div className="p-5">
+                            {counter.currentToken ? (
+                              // Currently Serving
+                              <div className="space-y-4">
+                                <div className="text-center py-4">
+                                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Now Serving</p>
+                                  <p className="text-4xl font-bold text-pakistan-green">
+                                    {counter.currentToken.tokenNumber || counter.currentToken}
+                                  </p>
+                                  {counter.currentToken.customer && (
+                                    <>
+                                      <p className="text-sm text-gray-600 mt-2">{counter.currentToken.customer.fullName}</p>
+                                      <p className="text-xs text-gray-500">{counter.currentToken.serviceName}</p>
+                                    </>
+                                  )}
+                                </div>
+
+                                <div className="flex gap-2">
+                                  <Button
+                                    fullWidth
+                                    icon={FiCheckCircle}
+                                    onClick={() => handleAction('complete', counter.currentToken, counterId)}
+                                  >
+                                    Complete
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    icon={FiAlertCircle}
+                                    className="text-red-600 border-red-200 hover:bg-red-50"
+                                    onClick={() => handleAction('noshow', counter.currentToken, counterId)}
+                                  >
+                                    No Show
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : counter.status === 'break' ? (
+                              // On Break
+                              <div className="text-center py-8">
+                                <FiCoffee className="w-12 h-12 text-amber-400 mx-auto mb-3" />
+                                <p className="text-gray-600">Counter is on break</p>
+                                <Button
+                                  variant="outline"
+                                  className="mt-4"
+                                  icon={FiPlay}
+                                  onClick={() => handleAction('break', null, counterId)}
+                                >
+                                  Resume Counter
+                                </Button>
+                              </div>
+                            ) : (
+                              // Available - Show Call Next
+                              <div className="space-y-4">
+                                <div className="text-center py-4">
+                                  <FiMonitor className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                                  <p className="text-gray-500">No token being served</p>
+                                  {waitingTokens.length > 0 && (
+                                    <p className="text-sm text-pakistan-green mt-1">
+                                      Next: {waitingTokens[0].tokenNumber}
+                                    </p>
+                                  )}
+                                </div>
+
+                                <Button
+                                  fullWidth
+                                  size="lg"
+                                  icon={FiPlay}
+                                  onClick={() => handleAction('call', null, counterId)}
+                                  disabled={waitingTokens.length === 0}
+                                >
+                                  Call Next Token
+                                </Button>
+                              </div>
+                            )}
+
+                            {/* Counter Stats */}
+                            <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between text-sm">
+                              <span className="text-gray-500">Tokens served today</span>
+                              <span className="font-semibold text-gray-900">{counter.tokensServed || 0}</span>
+                            </div>
+                          </div>
+                        </Card>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+
+                {/* Queue List */}
+                <Card className="border-0 shadow-lg">
+                  <Card.Header>
+                    <div className="flex items-center justify-between">
+                      <Card.Title subtitle={`${waitingTokens.length} customers waiting`}>
+                        <span className="flex items-center gap-2">
+                          <FiUsers className="w-5 h-5 text-pakistan-green" />
+                          Queue
+                        </span>
+                      </Card.Title>
+                    </div>
+                  </Card.Header>
+
+                  <div className="space-y-3">
+                    {waitingTokens.length === 0 ? (
+                      <div className="text-center py-12">
+                        <FiUsers className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                        <p className="text-gray-500">No customers waiting</p>
+                      </div>
+                    ) : (
+                      waitingTokens.map((item, index) => (
+                        <motion.div
+                          key={item._id || item.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.4 + index * 0.05 }}
+                          className={`
+                            group flex items-center justify-between p-4 rounded-xl border-2 transition-all
+                            ${index === 0
+                              ? 'bg-pakistan-green-50 border-pakistan-green/30'
+                              : 'bg-white border-gray-100 hover:border-gray-200'
+                            }
+                          `}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={`
+                              w-12 h-12 rounded-xl flex items-center justify-center font-bold text-sm
+                              ${index === 0
+                                ? 'bg-pakistan-green text-white shadow-lg shadow-pakistan-green/30'
+                                : 'bg-gray-100 text-pakistan-green'
+                              }
+                            `}>
+                              {item.tokenNumber}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="font-semibold text-gray-900">
+                                  {item.customer?.fullName || 'Customer'}
+                                </p>
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getPriorityConfig(item.priority).color}`}>
+                                  {getPriorityConfig(item.priority).label}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-500">{item.serviceName || 'Service'}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              <p className="text-sm font-medium text-gray-900">{item.estimatedWaitTime || '-'}m</p>
+                              <p className="text-xs text-gray-500">est. wait</p>
+                            </div>
+                            {index === 0 && displayCounters.length > 0 && (
+                              <div className="flex gap-2">
+                                {displayCounters.slice(0, 2).map((counter, cIdx) => (
+                                  <Button
+                                    key={counter._id || counter.id}
+                                    size="sm"
+                                    variant={cIdx === 0 ? 'primary' : 'outline'}
+                                    icon={FiPlay}
+                                    onClick={() => handleAction('call', item, counter._id || counter.id)}
+                                    disabled={counter.status !== 'available'}
+                                  >
+                                    C{cIdx + 1}
+                                  </Button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      ))
+                    )}
+                  </div>
+                </Card>
+              </>
+            )}
           </motion.div>
-        </div>
-      </div>
+        )}
+      </AnimatePresence>
 
       {/* Confirm Dialog */}
       <ConfirmDialog
@@ -578,17 +785,23 @@ const AdminDashboard = () => {
         title={
           confirmAction === 'call' ? 'Call Token' :
           confirmAction === 'complete' ? 'Complete Token' :
-          'Mark as No Show'
+          confirmAction === 'noshow' ? 'Mark as No Show' :
+          confirmAction === 'break' ? 'Counter Break' :
+          'Confirm Action'
         }
         message={
-          confirmAction === 'call' ? `Call ${selectedToken?.tokenNumber} to your counter?` :
+          confirmAction === 'call' ? 'Call next token to this counter?' :
           confirmAction === 'complete' ? 'Mark the current token as completed?' :
-          'Mark the current token as no-show? This action cannot be undone.'
+          confirmAction === 'noshow' ? 'Mark the current token as no-show? This action cannot be undone.' :
+          confirmAction === 'break' ? 'Toggle counter break status?' :
+          'Are you sure?'
         }
         confirmText={
           confirmAction === 'call' ? 'Call' :
           confirmAction === 'complete' ? 'Complete' :
-          'Mark No Show'
+          confirmAction === 'noshow' ? 'Mark No Show' :
+          confirmAction === 'break' ? 'Confirm' :
+          'Confirm'
         }
         variant={confirmAction === 'noshow' ? 'danger' : 'primary'}
       />

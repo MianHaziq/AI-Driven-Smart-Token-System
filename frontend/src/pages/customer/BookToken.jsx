@@ -14,24 +14,51 @@ import {
   FiShield,
   FiStar,
   FiZap,
+  FiCreditCard,
+  FiGlobe,
+  FiTruck,
+  FiThermometer,
+  FiDollarSign,
+  FiGrid,
 } from 'react-icons/fi';
 import { Button, Card, Badge, SearchBar } from '../../components/common';
-import { ROUTES } from '../../utils/constants';
+import { ROUTES, SERVICES } from '../../utils/constants';
 import { formatDuration } from '../../utils/helpers';
 import centersData from '../../data/centers.json';
 import useAuthStore from '../../store/authStore';
+import useTokenStore from '../../store/tokenStore';
 import toast from 'react-hot-toast';
+
+// Cities for selection
+const CITIES = [
+  { id: 'lahore', name: 'Lahore', province: 'Punjab' },
+  { id: 'karachi', name: 'Karachi', province: 'Sindh' },
+  { id: 'islamabad', name: 'Islamabad', province: 'ICT' },
+];
+
+// Icon mapping for services
+const serviceIconMap = {
+  FiCreditCard: FiCreditCard,
+  FiGlobe: FiGlobe,
+  FiTruck: FiTruck,
+  FiZap: FiZap,
+  FiThermometer: FiThermometer,
+  FiDollarSign: FiDollarSign,
+};
 
 const BookToken = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated } = useAuthStore();
+  const { bookToken } = useTokenStore();
 
   const preSelectedService = location.state;
 
   const [step, setStep] = useState(1);
-  const [selectedCenter, setSelectedCenter] = useState(null);
   const [selectedService, setSelectedService] = useState(null);
+  const [selectedSubService, setSelectedSubService] = useState(null);
+  const [selectedCity, setSelectedCity] = useState(null);
+  const [selectedCenter, setSelectedCenter] = useState(null);
   const [loading, setLoading] = useState(false);
   const [bookedToken, setBookedToken] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,6 +66,7 @@ const BookToken = () => {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [enableLocation, setEnableLocation] = useState(true);
 
+  // Load centers and add dynamic data
   useEffect(() => {
     const loadedCenters = centersData.centers.map(center => ({
       ...center,
@@ -47,112 +75,91 @@ const BookToken = () => {
       distance: (Math.random() * 10 + 1).toFixed(1),
       isOpen: true,
       rating: (Math.random() * 1 + 4).toFixed(1),
-      type: getTypeFromCategory(center.serviceCategory),
     }));
     setCenters(loadedCenters);
   }, []);
 
+  // Handle pre-selected service from navigation
+  useEffect(() => {
+    if (preSelectedService?.serviceId && !preSelectedService.resumeBooking) {
+      const service = SERVICES.find(s => s.id === preSelectedService.serviceId);
+      if (service) {
+        setSelectedService(service);
+        if (preSelectedService.subServiceId) {
+          const subService = service.subServices.find(
+            ss => ss.id === preSelectedService.subServiceId
+          );
+          if (subService) {
+            setSelectedSubService(subService);
+            setStep(3); // Go to city selection
+          } else {
+            setStep(2); // Go to sub-service selection
+          }
+        } else {
+          setStep(2);
+        }
+      }
+    }
+  }, [preSelectedService]);
+
+  // Handle resume booking after login
   useEffect(() => {
     const pendingBooking = localStorage.getItem('pendingBooking');
     if (pendingBooking && isAuthenticated && location.state?.resumeBooking) {
       const booking = JSON.parse(pendingBooking);
-      setSelectedCenter(booking.center);
       setSelectedService(booking.service);
-      setStep(3);
+      setSelectedSubService(booking.subService);
+      setSelectedCity(booking.city);
+      setSelectedCenter(booking.center);
+      setStep(5);
       localStorage.removeItem('pendingBooking');
       toast.success('Welcome back! Complete your booking below.');
     }
   }, [isAuthenticated, location.state]);
 
-  const getTypeFromCategory = (category) => {
-    const categoryMapping = {
-      'nadra': 'government',
-      'passport': 'government',
-      'excise': 'government',
-      'banks': 'bank',
-      'utilities': 'utility',
-      'hospitals': 'hospital',
-    };
-    return categoryMapping[category] || 'other';
-  };
-
-  const servicesByCategory = {
-    'nadra': [
-      { id: 'cnic-new', name: 'New CNIC', nameUrdu: 'نیا شناختی کارڈ', avgTime: 15, currentWait: 25, fee: 400 },
-      { id: 'cnic-renewal', name: 'CNIC Renewal', nameUrdu: 'شناختی کارڈ کی تجدید', avgTime: 10, currentWait: 20, fee: 400 },
-      { id: 'cnic-modification', name: 'CNIC Modification', nameUrdu: 'شناختی کارڈ میں تبدیلی', avgTime: 15, currentWait: 30, fee: 500 },
-      { id: 'family-registration', name: 'Family Registration Certificate', nameUrdu: 'خاندانی رجسٹریشن سرٹیفکیٹ', avgTime: 20, currentWait: 35, fee: 600 },
-      { id: 'nicop', name: 'NICOP Application', nameUrdu: 'نائیکوپ درخواست', avgTime: 20, currentWait: 40, fee: 3000 },
-      { id: 'poc', name: 'Pakistan Origin Card', nameUrdu: 'پاکستان اوریجن کارڈ', avgTime: 25, currentWait: 45, fee: 5000 },
-    ],
-    'passport': [
-      { id: 'passport-new', name: 'New Passport', nameUrdu: 'نیا پاسپورٹ', avgTime: 30, currentWait: 45, fee: 3500 },
-      { id: 'passport-renewal', name: 'Passport Renewal', nameUrdu: 'پاسپورٹ کی تجدید', avgTime: 25, currentWait: 35, fee: 3500 },
-      { id: 'passport-urgent', name: 'Urgent Passport', nameUrdu: 'فوری پاسپورٹ', avgTime: 20, currentWait: 30, fee: 9000 },
-      { id: 'passport-lost', name: 'Lost Passport Replacement', nameUrdu: 'گمشدہ پاسپورٹ', avgTime: 30, currentWait: 50, fee: 5000 },
-      { id: 'child-passport', name: 'Child Passport', nameUrdu: 'بچوں کا پاسپورٹ', avgTime: 25, currentWait: 40, fee: 2500 },
-    ],
-    'excise': [
-      { id: 'vehicle-registration', name: 'Vehicle Registration', nameUrdu: 'گاڑی کی رجسٹریشن', avgTime: 45, currentWait: 60, fee: 2000 },
-      { id: 'vehicle-transfer', name: 'Vehicle Transfer', nameUrdu: 'گاڑی کی منتقلی', avgTime: 40, currentWait: 55, fee: 1500 },
-      { id: 'driving-license-new', name: 'New Driving License', nameUrdu: 'نیا ڈرائیونگ لائسنس', avgTime: 30, currentWait: 45, fee: 1200 },
-      { id: 'driving-license-renewal', name: 'Driving License Renewal', nameUrdu: 'ڈرائیونگ لائسنس کی تجدید', avgTime: 20, currentWait: 30, fee: 800 },
-      { id: 'property-tax', name: 'Property Tax Payment', nameUrdu: 'پراپرٹی ٹیکس', avgTime: 15, currentWait: 20, fee: 0 },
-    ],
-    'electricity': [
-      { id: 'new-connection', name: 'New Connection', nameUrdu: 'نیا کنکشن', avgTime: 30, currentWait: 40, fee: 5000 },
-      { id: 'meter-change', name: 'Meter Change Request', nameUrdu: 'میٹر تبدیلی', avgTime: 20, currentWait: 25, fee: 1000 },
-      { id: 'load-extension', name: 'Load Extension', nameUrdu: 'لوڈ ایکسٹینشن', avgTime: 25, currentWait: 35, fee: 3000 },
-      { id: 'billing-complaint', name: 'Billing Complaint', nameUrdu: 'بل کی شکایت', avgTime: 15, currentWait: 20, fee: 0 },
-      { id: 'connection-transfer', name: 'Connection Transfer', nameUrdu: 'کنکشن منتقلی', avgTime: 20, currentWait: 30, fee: 500 },
-    ],
-    'sui-gas': [
-      { id: 'gas-new-connection', name: 'New Gas Connection', nameUrdu: 'نیا گیس کنکشن', avgTime: 35, currentWait: 45, fee: 8000 },
-      { id: 'gas-meter-change', name: 'Meter Replacement', nameUrdu: 'میٹر تبدیلی', avgTime: 20, currentWait: 25, fee: 1500 },
-      { id: 'gas-complaint', name: 'Gas Leakage Complaint', nameUrdu: 'گیس لیکیج شکایت', avgTime: 10, currentWait: 15, fee: 0 },
-      { id: 'gas-bill-correction', name: 'Bill Correction', nameUrdu: 'بل کی درستی', avgTime: 15, currentWait: 20, fee: 0 },
-    ],
-    'banks': [
-      { id: 'account-opening', name: 'Account Opening', nameUrdu: 'اکاؤنٹ کھولنا', avgTime: 30, currentWait: 20, fee: 0 },
-      { id: 'atm-card', name: 'ATM/Debit Card Issuance', nameUrdu: 'اے ٹی ایم کارڈ', avgTime: 15, currentWait: 12, fee: 500 },
-      { id: 'cheque-book', name: 'Cheque Book Request', nameUrdu: 'چیک بک', avgTime: 10, currentWait: 10, fee: 300 },
-      { id: 'bank-statement', name: 'Bank Statement', nameUrdu: 'بینک اسٹیٹمنٹ', avgTime: 10, currentWait: 8, fee: 200 },
-      { id: 'loan-inquiry', name: 'Loan Inquiry', nameUrdu: 'قرض کی معلومات', avgTime: 25, currentWait: 30, fee: 0 },
-    ],
-  };
-
+  // Filter centers by city and service category
   const filteredCenters = centers.filter((center) => {
+    const matchesCity = selectedCity ?
+      center.city.toLowerCase() === selectedCity.name.toLowerCase() : true;
+    const matchesService = selectedService ?
+      center.serviceCategory === selectedService.id : true;
     const matchesSearch = center.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       center.address.toLowerCase().includes(searchQuery.toLowerCase());
 
-    if (preSelectedService?.serviceId) {
-      return matchesSearch && center.serviceCategory === preSelectedService.serviceId;
-    }
-
-    return matchesSearch;
+    return matchesCity && matchesService && matchesSearch;
   });
-
-  const handleSelectCenter = (center) => {
-    setSelectedCenter(center);
-
-    if (preSelectedService?.subServiceId) {
-      const categoryServices = servicesByCategory[center.serviceCategory] || [];
-      const preSelected = categoryServices.find(s => s.id === preSelectedService.subServiceId);
-      if (preSelected) {
-        setSelectedService(preSelected);
-        setStep(3);
-        return;
-      }
-    }
-
-    setStep(2);
-  };
 
   const handleSelectService = (service) => {
     setSelectedService(service);
+    setSelectedSubService(null);
+    setSelectedCity(null);
+    setSelectedCenter(null);
+    setStep(2);
+  };
+
+  const handleSelectSubService = (subService) => {
+    setSelectedSubService(subService);
     setStep(3);
   };
 
+  const handleSelectCity = (city) => {
+    setSelectedCity(city);
+    setSelectedCenter(null);
+    setStep(4);
+  };
+
+  const handleSelectCenter = (center) => {
+    setSelectedCenter(center);
+    setStep(5);
+  };
+
+  const handleGoBack = () => {
+    if (step > 1) {
+      setStep(step - 1);
+    }
+  };
+
+  // Clear location state after initial load
   useEffect(() => {
     if (location.state && !location.state.resumeBooking) {
       window.history.replaceState({}, document.title);
@@ -167,8 +174,10 @@ const BookToken = () => {
 
     if (!isAuthenticated) {
       localStorage.setItem('pendingBooking', JSON.stringify({
-        center: selectedCenter,
         service: selectedService,
+        subService: selectedSubService,
+        city: selectedCity,
+        center: selectedCenter,
       }));
 
       toast('Please login to complete your booking', { icon: '🔐' });
@@ -184,21 +193,29 @@ const BookToken = () => {
 
     setLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Call the API to book token
+      const result = await bookToken(selectedSubService.id, 'normal');
 
-      const token = {
-        id: Math.random().toString(36).substr(2, 9),
-        tokenNumber: `A-${Math.floor(Math.random() * 900) + 100}`,
-        position: Math.floor(Math.random() * 10) + 1,
-        estimatedWait: selectedService.currentWait,
-        serviceCenter: selectedCenter,
-        service: selectedService,
-        bookedAt: new Date(),
-      };
+      if (result.success) {
+        // Combine API response with local selection data for display
+        const bookedTokenData = {
+          ...result.token,
+          tokenNumber: result.token?.tokenNumber || `${selectedService.id.charAt(0).toUpperCase()}-${Math.floor(Math.random() * 900) + 100}`,
+          position: result.token?.position || Math.floor(Math.random() * 10) + 1,
+          estimatedWait: result.token?.estimatedWaitTime || selectedSubService.duration,
+          service: selectedService,
+          subService: selectedSubService,
+          city: selectedCity,
+          center: selectedCenter,
+          bookedAt: result.token?.createdAt || new Date(),
+        };
 
-      setBookedToken(token);
-      setStep(4);
-      toast.success('Token booked successfully!');
+        setBookedToken(bookedTokenData);
+        setStep(6);
+        toast.success('Token booked successfully!');
+      } else {
+        toast.error(result.message || 'Booking failed. Please try again.');
+      }
     } catch (err) {
       console.error(err);
       toast.error('Booking failed. Please try again.');
@@ -208,10 +225,12 @@ const BookToken = () => {
   };
 
   const steps = [
-    { num: 1, label: 'Select Center', icon: FiMapPin },
-    { num: 2, label: 'Choose Service', icon: FiZap },
-    { num: 3, label: 'Confirm', icon: FiShield },
-    { num: 4, label: 'Done', icon: FiCheck },
+    { num: 1, label: 'Service', icon: FiGrid },
+    { num: 2, label: 'Type', icon: FiZap },
+    { num: 3, label: 'City', icon: FiMapPin },
+    { num: 4, label: 'Center', icon: FiNavigation },
+    { num: 5, label: 'Confirm', icon: FiShield },
+    { num: 6, label: 'Done', icon: FiCheck },
   ];
 
   const getWaitTimeColor = (waitTime) => {
@@ -254,7 +273,7 @@ const BookToken = () => {
             className="mt-8"
           >
             <div className="flex items-center justify-center">
-              {steps.map((s, index) => (
+              {steps.slice(0, 5).map((s, index) => (
                 <div key={s.num} className="flex items-center">
                   <motion.div
                     initial={{ scale: 0.8 }}
@@ -263,7 +282,7 @@ const BookToken = () => {
                   >
                     <div
                       className={`
-                        w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center font-semibold transition-all duration-300
+                        w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center font-semibold transition-all duration-300
                         ${step >= s.num
                           ? 'bg-white text-pakistan-green shadow-lg shadow-white/20'
                           : 'bg-white/10 text-white/50'
@@ -272,9 +291,9 @@ const BookToken = () => {
                       `}
                     >
                       {step > s.num ? (
-                        <FiCheck className="w-6 h-6" />
+                        <FiCheck className="w-5 h-5" />
                       ) : (
-                        <s.icon className="w-5 h-5 sm:w-6 sm:h-6" />
+                        <s.icon className="w-4 h-4 sm:w-5 sm:h-5" />
                       )}
                     </div>
                     {step === s.num && (
@@ -284,8 +303,8 @@ const BookToken = () => {
                       />
                     )}
                   </motion.div>
-                  {index < steps.length - 1 && (
-                    <div className="relative w-12 sm:w-20 lg:w-28 mx-1 sm:mx-2">
+                  {index < 4 && (
+                    <div className="relative w-8 sm:w-16 lg:w-20 mx-1">
                       <div className="h-1 bg-white/20 rounded-full" />
                       <motion.div
                         initial={{ width: 0 }}
@@ -298,14 +317,13 @@ const BookToken = () => {
                 </div>
               ))}
             </div>
-            <div className="flex justify-between mt-3 px-2 sm:px-0">
-              {steps.map((s) => (
+            <div className="flex justify-between mt-3 px-2 sm:px-0 max-w-lg mx-auto">
+              {steps.slice(0, 5).map((s) => (
                 <span
                   key={s.num}
                   className={`text-xs sm:text-sm transition-all ${
                     step >= s.num ? 'text-white font-medium' : 'text-white/50'
                   }`}
-                  style={{ width: '25%', textAlign: 'center' }}
                 >
                   {s.label}
                 </span>
@@ -316,9 +334,9 @@ const BookToken = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 mt-6 pb-12 ">
+      <div className="max-w-4xl mx-auto px-4 -mt-6 pb-12">
         <AnimatePresence mode="wait">
-          {/* Step 1: Select Service Center */}
+          {/* Step 1: Select Service */}
           {step === 1 && (
             <motion.div
               key="step1"
@@ -329,45 +347,277 @@ const BookToken = () => {
             >
               <Card className="shadow-xl border-0">
                 <Card.Header border={false}>
-                  <div className="flex items-center justify-between">
-                    <Card.Title subtitle="Choose a service center near you">
+                  <Card.Title subtitle="What service do you need?">
+                    <span className="flex items-center gap-2">
+                      <FiGrid className="w-5 h-5 text-pakistan-green" />
+                      Select Service
+                    </span>
+                  </Card.Title>
+                </Card.Header>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {SERVICES.map((service, index) => {
+                    const IconComponent = serviceIconMap[service.icon] || FiGrid;
+                    return (
+                      <motion.div
+                        key={service.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        onClick={() => handleSelectService(service)}
+                        className={`
+                          group relative p-5 border-2 rounded-2xl cursor-pointer transition-all duration-300
+                          hover:shadow-lg hover:shadow-pakistan-green/10
+                          ${selectedService?.id === service.id
+                            ? 'border-pakistan-green bg-pakistan-green-50/50'
+                            : 'border-gray-100 hover:border-pakistan-green/50 bg-white'
+                          }
+                        `}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className={`w-12 h-12 ${service.color} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                            <IconComponent className="w-6 h-6 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-2xl">{service.emoji}</span>
+                              <h3 className="font-semibold text-gray-900 group-hover:text-pakistan-green transition-colors">
+                                {service.name}
+                              </h3>
+                            </div>
+                            <p className="text-sm text-gray-500 mt-1">
+                              {service.description}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-2">
+                              {service.subServices.length} services available
+                            </p>
+                          </div>
+                          <div className="flex-shrink-0 self-center">
+                            <FiArrowRight className="w-5 h-5 text-gray-400 group-hover:text-pakistan-green group-hover:translate-x-1 transition-all" />
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Step 2: Select Sub-Service */}
+          {step === 2 && selectedService && (
+            <motion.div
+              key="step2"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="shadow-xl border-0">
+                <Card.Header border={false}>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={FiArrowLeft}
+                      onClick={handleGoBack}
+                      className="!p-2"
+                    />
+                    <Card.Title subtitle={selectedService.name}>
                       <span className="flex items-center gap-2">
-                        <FiMapPin className="w-5 h-5 text-pakistan-green" />
-                        Select Service Center
+                        <FiZap className="w-5 h-5 text-pakistan-green" />
+                        Select Service Type
                       </span>
                     </Card.Title>
+                  </div>
+                </Card.Header>
+
+                {/* Selected Service Banner */}
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl mb-6">
+                  <div className={`w-10 h-10 ${selectedService.color} rounded-lg flex items-center justify-center`}>
+                    <span className="text-xl">{selectedService.emoji}</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">{selectedService.name}</p>
+                    <p className="text-sm text-gray-500">{selectedService.description}</p>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {selectedService.subServices.map((subService, index) => (
+                    <motion.div
+                      key={subService.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      onClick={() => handleSelectSubService(subService)}
+                      className={`
+                        group p-4 border-2 rounded-xl cursor-pointer transition-all duration-300
+                        hover:shadow-md
+                        ${selectedSubService?.id === subService.id
+                          ? 'border-pakistan-green bg-pakistan-green-50/50'
+                          : 'border-gray-100 hover:border-pakistan-green/50 bg-white'
+                        }
+                      `}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-medium text-gray-900 group-hover:text-pakistan-green">
+                          {subService.name}
+                        </h3>
+                        {subService.fee > 0 && (
+                          <Badge variant="info" size="sm">
+                            Rs. {subService.fee.toLocaleString()}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 text-sm text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <FiClock className="w-4 h-4" />
+                          ~{subService.duration} mins
+                        </span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Step 3: Select City */}
+          {step === 3 && selectedSubService && (
+            <motion.div
+              key="step3"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="shadow-xl border-0">
+                <Card.Header border={false}>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={FiArrowLeft}
+                      onClick={handleGoBack}
+                      className="!p-2"
+                    />
+                    <Card.Title subtitle="Where are you located?">
+                      <span className="flex items-center gap-2">
+                        <FiMapPin className="w-5 h-5 text-pakistan-green" />
+                        Select City
+                      </span>
+                    </Card.Title>
+                  </div>
+                </Card.Header>
+
+                {/* Selected Service Summary */}
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl mb-6">
+                  <div className={`w-10 h-10 ${selectedService.color} rounded-lg flex items-center justify-center`}>
+                    <span className="text-xl">{selectedService.emoji}</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">{selectedSubService.name}</p>
+                    <p className="text-sm text-gray-500">{selectedService.name}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-500">~{selectedSubService.duration} mins</p>
+                    {selectedSubService.fee > 0 && (
+                      <p className="font-medium text-pakistan-green">Rs. {selectedSubService.fee.toLocaleString()}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-3">
+                  {CITIES.map((city, index) => (
+                    <motion.div
+                      key={city.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      onClick={() => handleSelectCity(city)}
+                      className={`
+                        group relative p-6 border-2 rounded-2xl cursor-pointer transition-all duration-300
+                        hover:shadow-lg text-center
+                        ${selectedCity?.id === city.id
+                          ? 'border-pakistan-green bg-pakistan-green-50/50'
+                          : 'border-gray-100 hover:border-pakistan-green/50 bg-white'
+                        }
+                      `}
+                    >
+                      <div className={`
+                        w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center transition-all
+                        ${selectedCity?.id === city.id
+                          ? 'bg-pakistan-green text-white'
+                          : 'bg-pakistan-green-50 text-pakistan-green group-hover:bg-pakistan-green group-hover:text-white'
+                        }
+                      `}>
+                        <FiMapPin className="w-8 h-8" />
+                      </div>
+                      <h3 className="font-semibold text-lg text-gray-900 group-hover:text-pakistan-green">
+                        {city.name}
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-1">{city.province}</p>
+
+                      {/* Center count */}
+                      <p className="text-xs text-gray-400 mt-3">
+                        {centers.filter(c =>
+                          c.city.toLowerCase() === city.name.toLowerCase() &&
+                          c.serviceCategory === selectedService.id
+                        ).length} centers available
+                      </p>
+                    </motion.div>
+                  ))}
+                </div>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Step 4: Select Service Center */}
+          {step === 4 && selectedCity && (
+            <motion.div
+              key="step4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="shadow-xl border-0">
+                <Card.Header border={false}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={FiArrowLeft}
+                        onClick={handleGoBack}
+                        className="!p-2"
+                      />
+                      <Card.Title subtitle={`${selectedService.name} in ${selectedCity.name}`}>
+                        <span className="flex items-center gap-2">
+                          <FiNavigation className="w-5 h-5 text-pakistan-green" />
+                          Select Center
+                        </span>
+                      </Card.Title>
+                    </div>
                     <Badge variant="info" className="hidden sm:flex">
-                      {filteredCenters.length} Centers Available
+                      {filteredCenters.length} Centers
                     </Badge>
                   </div>
                 </Card.Header>
 
-                {/* Pre-selected service banner */}
-                {preSelectedService && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="bg-gradient-to-r from-pakistan-green-50 to-green-50 border border-pakistan-green/20 rounded-xl p-4 mb-6"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-pakistan-green rounded-xl flex items-center justify-center">
-                        <FiCheck className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">Pre-selected Service</p>
-                        <p className="font-semibold text-pakistan-green">
-                          {preSelectedService.serviceName} - {preSelectedService.subServiceName}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-gray-500">Est. {preSelectedService.duration} mins</p>
-                        {preSelectedService.fee > 0 && (
-                          <p className="font-semibold text-pakistan-green">Rs. {preSelectedService.fee.toLocaleString()}</p>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
+                {/* Selection Summary */}
+                <div className="flex flex-wrap items-center gap-2 p-4 bg-gray-50 rounded-xl mb-6">
+                  <Badge variant="success" className="flex items-center gap-1">
+                    <span>{selectedService.emoji}</span> {selectedService.name}
+                  </Badge>
+                  <FiArrowRight className="w-4 h-4 text-gray-400" />
+                  <Badge variant="info">{selectedSubService.name}</Badge>
+                  <FiArrowRight className="w-4 h-4 text-gray-400" />
+                  <Badge variant="warning" className="flex items-center gap-1">
+                    <FiMapPin className="w-3 h-3" /> {selectedCity.name}
+                  </Badge>
+                </div>
 
                 <SearchBar
                   placeholder="Search by center name or location..."
@@ -382,7 +632,8 @@ const BookToken = () => {
                       <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <FiMapPin className="w-8 h-8 text-gray-400" />
                       </div>
-                      <p className="text-gray-500">No centers found matching your search</p>
+                      <p className="text-gray-500">No centers found in {selectedCity.name}</p>
+                      <p className="text-sm text-gray-400 mt-1">Try selecting a different city</p>
                     </div>
                   ) : (
                     filteredCenters.map((center, index) => (
@@ -450,10 +701,6 @@ const BookToken = () => {
                                 <FiStar className="w-4 h-4 text-amber-500" />
                                 <span className="text-sm font-medium text-gray-700">{center.rating}</span>
                               </div>
-                              <div className="flex items-center gap-1 text-sm text-gray-500">
-                                <FiMapPin className="w-3.5 h-3.5" />
-                                {center.distance} km
-                              </div>
                             </div>
 
                             {/* Contact Info */}
@@ -496,116 +743,10 @@ const BookToken = () => {
             </motion.div>
           )}
 
-          {/* Step 2: Select Service */}
-          {step === 2 && selectedCenter && (
+          {/* Step 5: Confirm Booking */}
+          {step === 5 && selectedCenter && (
             <motion.div
-              key="step2"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Card className="shadow-xl border-0">
-                <Card.Header border={false}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        icon={FiArrowLeft}
-                        onClick={() => setStep(1)}
-                        className="!p-2"
-                      />
-                      <Card.Title subtitle={selectedCenter.name}>
-                        <span className="flex items-center gap-2">
-                          <FiZap className="w-5 h-5 text-pakistan-green" />
-                          Choose Service
-                        </span>
-                      </Card.Title>
-                    </div>
-                  </div>
-                </Card.Header>
-
-                {/* Selected Center Summary */}
-                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl mb-6">
-                  <div className="w-10 h-10 bg-pakistan-green rounded-lg flex items-center justify-center">
-                    <FiMapPin className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">{selectedCenter.name}</p>
-                    <p className="text-sm text-gray-500">{selectedCenter.address}</p>
-                  </div>
-                  <div className={`px-3 py-1 rounded-lg ${getWaitTimeColor(selectedCenter.avgWaitTime)}`}>
-                    <span className="text-sm font-medium">~{selectedCenter.avgWaitTime} min wait</span>
-                  </div>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {servicesByCategory[selectedCenter.serviceCategory]?.map((service, index) => (
-                    <motion.div
-                      key={service.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      onClick={() => handleSelectService(service)}
-                      className={`
-                        group relative p-5 border-2 rounded-2xl cursor-pointer transition-all duration-300
-                        hover:shadow-lg hover:shadow-pakistan-green/10
-                        ${selectedService?.id === service.id
-                          ? 'border-pakistan-green bg-pakistan-green-50/50'
-                          : 'border-gray-100 hover:border-pakistan-green/50 bg-white'
-                        }
-                      `}
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 group-hover:text-pakistan-green transition-colors">
-                            {service.name}
-                          </h3>
-                          <p className="text-sm text-gray-500 font-urdu mt-0.5">
-                            {service.nameUrdu}
-                          </p>
-                        </div>
-                        {service.fee > 0 && (
-                          <span className="text-lg font-bold text-pakistan-green">
-                            Rs. {service.fee.toLocaleString()}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                          <FiClock className="w-4 h-4 text-pakistan-green" />
-                          ~{service.avgTime} min service
-                        </div>
-                        <div className={`flex items-center gap-1.5 text-sm px-2 py-0.5 rounded ${getWaitTimeColor(service.currentWait)}`}>
-                          <span className="font-medium">Wait: {formatDuration(service.currentWait)}</span>
-                        </div>
-                      </div>
-
-                      {/* Selection indicator */}
-                      <div className={`
-                        absolute top-4 right-4 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
-                        ${selectedService?.id === service.id
-                          ? 'border-pakistan-green bg-pakistan-green'
-                          : 'border-gray-300 group-hover:border-pakistan-green'
-                        }
-                      `}>
-                        {selectedService?.id === service.id && (
-                          <FiCheck className="w-4 h-4 text-white" />
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </Card>
-            </motion.div>
-          )}
-
-          {/* Step 3: Confirm Booking */}
-          {step === 3 && selectedCenter && selectedService && (
-            <motion.div
-              key="step3"
+              key="step5"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -618,7 +759,7 @@ const BookToken = () => {
                       variant="ghost"
                       size="sm"
                       icon={FiArrowLeft}
-                      onClick={() => setStep(2)}
+                      onClick={handleGoBack}
                       className="!p-2"
                     />
                     <Card.Title>
@@ -643,24 +784,12 @@ const BookToken = () => {
                     <div className="space-y-4">
                       <div className="flex items-center justify-between py-3 border-b border-gray-200">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-pakistan-green-50 rounded-lg flex items-center justify-center">
-                            <FiMapPin className="w-5 h-5 text-pakistan-green" />
+                          <div className={`w-10 h-10 ${selectedService.color} rounded-lg flex items-center justify-center`}>
+                            <span className="text-lg">{selectedService.emoji}</span>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">Service Center</p>
-                            <p className="font-medium text-gray-900">{selectedCenter.name}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-pakistan-green-50 rounded-lg flex items-center justify-center">
-                            <FiNavigation className="w-5 h-5 text-pakistan-green" />
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">Location</p>
-                            <p className="font-medium text-gray-900">{selectedCenter.address}</p>
+                            <p className="text-xs text-gray-500 uppercase tracking-wide">Service</p>
+                            <p className="font-medium text-gray-900">{selectedService.name}</p>
                           </div>
                         </div>
                       </div>
@@ -671,8 +800,33 @@ const BookToken = () => {
                             <FiZap className="w-5 h-5 text-pakistan-green" />
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">Service</p>
-                            <p className="font-medium text-gray-900">{selectedService.name}</p>
+                            <p className="text-xs text-gray-500 uppercase tracking-wide">Service Type</p>
+                            <p className="font-medium text-gray-900">{selectedSubService.name}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between py-3 border-b border-gray-200">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                            <FiMapPin className="w-5 h-5 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase tracking-wide">City</p>
+                            <p className="font-medium text-gray-900">{selectedCity.name}, {selectedCity.province}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between py-3 border-b border-gray-200">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-pakistan-green-50 rounded-lg flex items-center justify-center">
+                            <FiNavigation className="w-5 h-5 text-pakistan-green" />
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase tracking-wide">Service Center</p>
+                            <p className="font-medium text-gray-900">{selectedCenter.name}</p>
+                            <p className="text-sm text-gray-500">{selectedCenter.address}</p>
                           </div>
                         </div>
                       </div>
@@ -684,16 +838,16 @@ const BookToken = () => {
                           </div>
                           <div>
                             <p className="text-xs text-gray-500 uppercase tracking-wide">Estimated Wait</p>
-                            <p className="font-medium text-amber-600">~{formatDuration(selectedService.currentWait)}</p>
+                            <p className="font-medium text-amber-600">~{formatDuration(selectedCenter.avgWaitTime)}</p>
                           </div>
                         </div>
                       </div>
 
-                      {selectedService.fee > 0 && (
+                      {selectedSubService.fee > 0 && (
                         <div className="flex items-center justify-between py-4 bg-pakistan-green-50/50 rounded-xl px-4 -mx-2">
                           <span className="font-medium text-gray-700">Service Fee</span>
                           <span className="text-2xl font-bold text-pakistan-green">
-                            Rs. {selectedService.fee.toLocaleString()}
+                            Rs. {selectedSubService.fee.toLocaleString()}
                           </span>
                         </div>
                       )}
@@ -749,10 +903,10 @@ const BookToken = () => {
             </motion.div>
           )}
 
-          {/* Step 4: Booking Confirmed */}
-          {step === 4 && bookedToken && (
+          {/* Step 6: Booking Confirmed */}
+          {step === 6 && bookedToken && (
             <motion.div
-              key="step4"
+              key="step6"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.4 }}
@@ -820,21 +974,30 @@ const BookToken = () => {
                     </div>
                   </motion.div>
 
-                  {/* Center Info */}
+                  {/* Booking Details */}
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
-                    className="bg-gray-50 rounded-2xl p-5 mx-4 sm:mx-auto sm:max-w-md mb-8 text-left"
+                    className="bg-gray-50 rounded-2xl p-5 mx-4 sm:mx-auto sm:max-w-md mb-8 text-left space-y-3"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-pakistan-green rounded-xl flex items-center justify-center">
-                        <FiMapPin className="w-6 h-6 text-white" />
+                      <div className={`w-10 h-10 ${bookedToken.service.color} rounded-lg flex items-center justify-center`}>
+                        <span className="text-lg">{bookedToken.service.emoji}</span>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">Service Center</p>
-                        <p className="font-semibold text-gray-900">{selectedCenter.name}</p>
-                        <p className="text-sm text-gray-500">{selectedCenter.address}</p>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Service</p>
+                        <p className="font-medium text-gray-900">{bookedToken.subService.name}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-pakistan-green rounded-lg flex items-center justify-center">
+                        <FiMapPin className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Location</p>
+                        <p className="font-medium text-gray-900">{bookedToken.center.name}</p>
+                        <p className="text-sm text-gray-500">{bookedToken.city.name}</p>
                       </div>
                     </div>
                   </motion.div>
@@ -856,7 +1019,7 @@ const BookToken = () => {
                     </Button>
                     <Button
                       fullWidth
-                      onClick={() => navigate(`/token/${bookedToken.id}`)}
+                      onClick={() => navigate(ROUTES.MY_TOKENS)}
                       icon={FiArrowRight}
                       iconPosition="right"
                       className="!py-3"

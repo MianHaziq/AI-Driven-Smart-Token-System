@@ -1,7 +1,11 @@
+const mongoose = require("mongoose");
 const Token = require("../models/token");
 const Service = require("../models/service");
 const Counter = require("../models/counter");
 const Settings = require("../models/settings");
+
+/* ===================== HELPER: CHECK IF VALID OBJECTID ===================== */
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id) && String(new mongoose.Types.ObjectId(id)) === id;
 
 /* ===================== HELPER: GET OR CREATE SETTINGS ===================== */
 const getSettings = async () => {
@@ -42,9 +46,17 @@ const bookToken = async (req, res, next) => {
             return res.status(400).json({ message: "Service is required" });
         }
 
-        const service = await Service.findById(serviceId);
+        // Find service by ObjectId or slug
+        let service;
+        if (isValidObjectId(serviceId)) {
+            service = await Service.findById(serviceId);
+        } else {
+            // Try finding by slug
+            service = await Service.findOne({ slug: serviceId });
+        }
+
         if (!service) {
-            return res.status(404).json({ message: "Service not found" });
+            return res.status(404).json({ message: "Service not found. Please ensure services are seeded in the database." });
         }
 
         if (!service.isActive) {
@@ -64,7 +76,7 @@ const bookToken = async (req, res, next) => {
         const newToken = new Token({
             tokenNumber,
             customer: customerId,
-            service: serviceId,
+            service: service._id,  // Use actual MongoDB ObjectId
             serviceName: service.name,
             status: "waiting",
             priority: priority || "normal",

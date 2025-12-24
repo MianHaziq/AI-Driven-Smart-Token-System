@@ -12,9 +12,16 @@ const serviceSchema = new mongoose.Schema(
             trim: true,
             default: ""
         },
+        slug: {
+            type: String,
+            unique: true,
+            sparse: true,
+            trim: true,
+            lowercase: true
+        },
         category: {
             type: String,
-            enum: ["nadra", "passport", "excise", "banks", "utilities"],
+            enum: ["nadra", "passport", "excise", "banks", "utilities", "electricity", "sui-gas"],
             required: true
         },
         avgTime: {

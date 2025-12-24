@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import {
@@ -9,9 +10,12 @@ import {
   FiEdit2,
   FiShield,
   FiClock,
+  FiList,
+  FiArrowRight,
 } from 'react-icons/fi';
 import { Button, Input, Card, Alert, Badge } from '../../components/common';
 import { formatDate, formatPhoneNumber } from '../../utils/helpers';
+import { ROUTES } from '../../utils/constants';
 
 const Profile = ({ user }) => {
   const [editing, setEditing] = useState(false);
@@ -244,6 +248,45 @@ const Profile = ({ user }) => {
                 Time Saved with SQP
               </p>
               <p className="text-2xl font-bold text-pakistan-green">12+ Hours</p>
+            </div>
+          </Card>
+
+          {/* Quick Links */}
+          <Card>
+            <Card.Header>
+              <Card.Title>Quick Links</Card.Title>
+            </Card.Header>
+            <div className="!space-y-2">
+              <Link
+                to={ROUTES.MY_TOKENS}
+                className="flex items-center justify-between !p-3 bg-gray-50 hover:bg-pakistan-green-50 rounded-lg transition-colors group"
+              >
+                <div className="flex items-center !gap-3">
+                  <div className="w-10 h-10 bg-pakistan-green-100 rounded-lg flex items-center justify-center">
+                    <FiList className="w-5 h-5 text-pakistan-green" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900 group-hover:text-pakistan-green">My Tokens</p>
+                    <p className="text-xs text-gray-500">View active tokens</p>
+                  </div>
+                </div>
+                <FiArrowRight className="w-5 h-5 text-gray-400 group-hover:text-pakistan-green" />
+              </Link>
+              <Link
+                to={ROUTES.TOKEN_HISTORY}
+                className="flex items-center justify-between !p-3 bg-gray-50 hover:bg-pakistan-green-50 rounded-lg transition-colors group"
+              >
+                <div className="flex items-center !gap-3">
+                  <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                    <FiClock className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900 group-hover:text-pakistan-green">History</p>
+                    <p className="text-xs text-gray-500">View past tokens</p>
+                  </div>
+                </div>
+                <FiArrowRight className="w-5 h-5 text-gray-400 group-hover:text-pakistan-green" />
+              </Link>
             </div>
           </Card>
         </div>

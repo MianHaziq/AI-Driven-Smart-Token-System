@@ -25,6 +25,7 @@ import {
   Dashboard as CustomerDashboard,
   BookToken,
   MyTokens,
+  History,
   Profile as CustomerProfile,
   TokenDetails,
 } from './pages/customer';
@@ -38,6 +39,7 @@ import {
   Counters,
   Users,
   Settings as AdminSettings,
+  Tokens,
 } from './pages/admin';
 
 // Protected Route Component
@@ -114,6 +116,9 @@ function App() {
           <Route path="/services" element={<Services />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/book-token" element={<BookToken />} />
+          <Route path="/my-tokens" element={<MyTokens />} />
+          <Route path="/history" element={<History />} />
+          <Route path="/profile" element={<CustomerProfile />} />
         </Route>
 
         {/* Auth Routes with AuthLayout */}
@@ -154,6 +159,7 @@ function App() {
         >
           <Route path="/customer/dashboard" element={<CustomerDashboard />} />
           <Route path="/customer/my-tokens" element={<MyTokens />} />
+          <Route path="/customer/history" element={<History />} />
           <Route path="/customer/profile" element={<CustomerProfile />} />
           <Route path="/token/:id" element={<TokenDetails />} />
         </Route>
@@ -167,6 +173,7 @@ function App() {
           }
         >
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/tokens" element={<Tokens />} />
           <Route path="/admin/queue" element={<ManageQueue />} />
           <Route path="/admin/services" element={<AdminServices />} />
           <Route path="/admin/counters" element={<Counters />} />

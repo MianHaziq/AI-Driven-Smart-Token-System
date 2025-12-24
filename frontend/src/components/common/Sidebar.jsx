@@ -21,11 +21,9 @@ const Sidebar = ({ isOpen, onClose, onLogout }) => {
 
   const adminLinks = [
     { path: ROUTES.ADMIN_DASHBOARD, label: 'Dashboard', icon: FiHome },
-    { path: ROUTES.MANAGE_QUEUE, label: 'Manage Queue', icon: FiList },
-    { path: ROUTES.MANAGE_SERVICES, label: 'Services', icon: FiLayers },
-    { path: ROUTES.MANAGE_COUNTERS, label: 'Counters', icon: FiMonitor },
-    { path: ROUTES.ANALYTICS, label: 'Analytics', icon: FiBarChart2 },
+    { path: ROUTES.MANAGE_TOKENS, label: 'Tokens', icon: FiFileText },
     { path: ROUTES.USER_MANAGEMENT, label: 'Users', icon: FiUsers },
+    { path: ROUTES.ANALYTICS, label: 'Analytics', icon: FiBarChart2 },
     { path: ROUTES.SYSTEM_SETTINGS, label: 'Settings', icon: FiSettings },
   ];
 

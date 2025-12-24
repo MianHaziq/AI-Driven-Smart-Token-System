@@ -1,12 +1,45 @@
-import { Outlet, Link } from 'react-router-dom';
+import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
+import { FiArrowLeft, FiHome } from 'react-icons/fi';
 import { ROUTES, APP_NAME } from '../utils/constants';
 
 const AuthLayout = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleGoBack = () => {
+    // If there's a from state, go there, otherwise go home
+    if (location.state?.from) {
+      navigate(location.state.from);
+    } else if (window.history.length > 2) {
+      navigate(-1);
+    } else {
+      navigate(ROUTES.HOME);
+    }
+  };
+
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Form */}
       <div className="flex-1 flex flex-col justify-center !py-12 !px-4 sm:!px-6 lg:!px-20 xl:!px-24">
         <div className="mx-auto w-full max-w-sm lg:max-w-md">
+          {/* Back Navigation */}
+          <div className="flex items-center !gap-3 !mb-6">
+            <button
+              onClick={handleGoBack}
+              className="flex items-center !gap-2 !px-3 !py-2 text-sm text-gray-600 hover:text-pakistan-green hover:bg-pakistan-green-50 rounded-lg transition-colors"
+            >
+              <FiArrowLeft className="w-4 h-4" />
+              <span>Go Back</span>
+            </button>
+            <Link
+              to={ROUTES.HOME}
+              className="flex items-center !gap-2 !px-3 !py-2 text-sm text-gray-600 hover:text-pakistan-green hover:bg-pakistan-green-50 rounded-lg transition-colors"
+            >
+              <FiHome className="w-4 h-4" />
+              <span>Home</span>
+            </Link>
+          </div>
+
           {/* Logo */}
           <Link to={ROUTES.HOME} className="flex items-center !space-x-3 !mb-8">
             <div className="w-12 h-12 bg-gradient-pakistan rounded-xl flex items-center justify-center shadow-lg">
