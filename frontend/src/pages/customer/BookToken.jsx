@@ -316,7 +316,7 @@ const BookToken = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 -mt-6 pb-12">
+      <div className="max-w-4xl mx-auto px-4 mt-6 pb-12 ">
         <AnimatePresence mode="wait">
           {/* Step 1: Select Service Center */}
           {step === 1 && (
