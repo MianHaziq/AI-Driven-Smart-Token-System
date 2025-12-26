@@ -193,8 +193,14 @@ const BookToken = () => {
 
     setLoading(true);
     try {
-      // Call the API to book token
-      const result = await bookToken(selectedSubService.id, 'normal');
+      // Call the API to book token with center and city
+      // selectedCity is an object { id, name, province }, we need just the name string
+      const result = await bookToken(
+        selectedSubService.id,
+        'normal',
+        selectedCenter?.name || null,
+        selectedCity?.name || selectedCity || null
+      );
 
       if (result.success) {
         // Combine API response with local selection data for display

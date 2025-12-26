@@ -39,7 +39,7 @@ const generateTokenNumber = async () => {
 /* ===================== BOOK TOKEN ===================== */
 const bookToken = async (req, res, next) => {
     try {
-        const { serviceId, priority } = req.body;
+        const { serviceId, priority, serviceCenter, city } = req.body;
         const customerId = req.user.id;
 
         if (!serviceId) {
@@ -78,6 +78,8 @@ const bookToken = async (req, res, next) => {
             customer: customerId,
             service: service._id,  // Use actual MongoDB ObjectId
             serviceName: service.name,
+            serviceCenter: serviceCenter || null,
+            city: city || null,
             status: "waiting",
             priority: priority || "normal",
             position,
@@ -94,11 +96,16 @@ const bookToken = async (req, res, next) => {
         res.status(201).json({
             message: "Token booked successfully",
             token: {
+                _id: newToken._id,
                 tokenNumber: newToken.tokenNumber,
                 position: newToken.position,
                 estimatedWaitTime: newToken.estimatedWaitTime,
                 serviceName: service.name,
-                status: newToken.status
+                serviceCenter: newToken.serviceCenter,
+                city: newToken.city,
+                status: newToken.status,
+                priority: newToken.priority,
+                createdAt: newToken.createdAt
             }
         });
 
@@ -110,12 +117,47 @@ const bookToken = async (req, res, next) => {
 /* ===================== GET QUEUE STATUS ===================== */
 const getQueueStatus = async (req, res, next) => {
     try {
+        const { service, city, serviceCenter, status } = req.query;
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const tokens = await Token.find({
+        // Build query with optional filters
+        const query = {
             createdAt: { $gte: today }
-        }).populate('customer', 'fullName phoneNumber').sort({ position: 1 });
+        };
+
+        // Filter by service (can be ObjectId or slug)
+        if (service) {
+            if (isValidObjectId(service)) {
+                query.service = service;
+            } else {
+                // Find service by slug first
+                const serviceDoc = await Service.findOne({ slug: service });
+                if (serviceDoc) {
+                    query.service = serviceDoc._id;
+                }
+            }
+        }
+
+        // Filter by city
+        if (city) {
+            query.city = city;
+        }
+
+        // Filter by service center
+        if (serviceCenter) {
+            query.serviceCenter = serviceCenter;
+        }
+
+        // Filter by status
+        if (status && status !== 'all') {
+            query.status = status;
+        }
+
+        const tokens = await Token.find(query)
+            .populate('customer', 'fullName phoneNumber')
+            .populate('service', 'name slug category')
+            .sort({ position: 1 });
 
         const waiting = tokens.filter(t => t.status === 'waiting');
         const serving = tokens.filter(t => t.status === 'serving');
@@ -128,19 +170,42 @@ const getQueueStatus = async (req, res, next) => {
             serving: serving.length,
             completed: completed.length,
             noShows: noShows.length,
-            queue: waiting.slice(0, 10).map(t => ({
+            tokens: tokens.map(t => ({
+                _id: t._id,
                 tokenNumber: t.tokenNumber,
                 customerName: t.customer?.fullName || 'Customer',
+                customerPhone: t.customer?.phoneNumber || '',
                 serviceName: t.serviceName,
+                serviceCenter: t.serviceCenter,
+                city: t.city,
+                priority: t.priority,
+                position: t.position,
+                status: t.status,
+                estimatedWaitTime: t.estimatedWaitTime,
+                createdAt: t.createdAt,
+                calledAt: t.calledAt,
+                completedAt: t.completedAt
+            })),
+            queue: waiting.slice(0, 10).map(t => ({
+                _id: t._id,
+                tokenNumber: t.tokenNumber,
+                customerName: t.customer?.fullName || 'Customer',
+                customerPhone: t.customer?.phoneNumber || '',
+                serviceName: t.serviceName,
+                serviceCenter: t.serviceCenter,
+                city: t.city,
                 priority: t.priority,
                 position: t.position,
                 estimatedWaitTime: t.estimatedWaitTime,
                 createdAt: t.createdAt
             })),
             currentlyServing: serving.map(t => ({
+                _id: t._id,
                 tokenNumber: t.tokenNumber,
                 customerName: t.customer?.fullName || 'Customer',
                 serviceName: t.serviceName,
+                serviceCenter: t.serviceCenter,
+                city: t.city,
                 counter: t.counter
             }))
         });
@@ -153,20 +218,50 @@ const getQueueStatus = async (req, res, next) => {
 /* ===================== CALL NEXT TOKEN ===================== */
 const callNextToken = async (req, res, next) => {
     try {
-        const { counterId } = req.body;
+        const { counterId, serviceCenter, city } = req.body;
 
-        const counter = await Counter.findById(counterId);
-        if (!counter) {
-            return res.status(404).json({ message: "Counter not found" });
+        // Find or assign a counter
+        let counter;
+        if (counterId && isValidObjectId(counterId)) {
+            counter = await Counter.findById(counterId);
         }
 
+        // If no counter specified or not found, find any available counter
+        if (!counter) {
+            counter = await Counter.findOne({ status: "available" });
+        }
+
+        // If still no counter, create default ones or find one that's not serving
+        if (!counter) {
+            const existingCounters = await Counter.find();
+            if (existingCounters.length === 0) {
+                // Create default counters
+                const defaultCounters = [
+                    { name: "Counter 1", status: "available" },
+                    { name: "Counter 2", status: "available" },
+                    { name: "Counter 3", status: "available" },
+                ];
+                await Counter.insertMany(defaultCounters);
+                counter = await Counter.findOne({ status: "available" });
+            } else {
+                // Try to find any counter not currently serving
+                counter = await Counter.findOne({ status: { $ne: "serving" } });
+                if (!counter) {
+                    return res.status(400).json({ message: "All counters are busy. Please wait." });
+                }
+            }
+        }
+
+        // Build query for next waiting token with optional filters
+        const tokenQuery = { status: "waiting" };
+        if (serviceCenter) tokenQuery.serviceCenter = serviceCenter;
+        if (city) tokenQuery.city = city;
+
         // Find next waiting token (prioritize by priority, then position)
-        const nextToken = await Token.findOne({
-            status: "waiting"
-        }).sort({
+        const nextToken = await Token.findOne(tokenQuery).sort({
             priority: -1, // VIP > PWD > Senior > Normal
             position: 1
-        });
+        }).populate('customer', 'fullName phoneNumber');
 
         if (!nextToken) {
             return res.status(404).json({ message: "No tokens in queue" });
@@ -174,24 +269,33 @@ const callNextToken = async (req, res, next) => {
 
         // Update token
         nextToken.status = "serving";
-        nextToken.counter = counterId;
+        nextToken.counter = counter._id;
         nextToken.calledAt = new Date();
         nextToken.serviceStartTime = new Date();
         await nextToken.save();
 
         // Update counter
         counter.status = "serving";
-        counter.currentToken = nextToken.tokenNumber;
+        counter.currentToken = nextToken._id;
         await counter.save();
 
         res.json({
             message: "Token called successfully",
             token: {
+                _id: nextToken._id,
                 tokenNumber: nextToken.tokenNumber,
                 serviceName: nextToken.serviceName,
-                priority: nextToken.priority
+                serviceCenter: nextToken.serviceCenter,
+                city: nextToken.city,
+                customerName: nextToken.customer?.fullName || 'Customer',
+                customerPhone: nextToken.customer?.phoneNumber || '',
+                priority: nextToken.priority,
+                status: nextToken.status
             },
-            counter: counter.name
+            counter: {
+                _id: counter._id,
+                name: counter.name
+            }
         });
 
     } catch (error) {
@@ -326,7 +430,7 @@ const getMyTokens = async (req, res, next) => {
             .populate('service', 'name nameUrdu category')
             .sort({ createdAt: -1 });
 
-        res.json(tokens);
+        res.json({ tokens });
     } catch (error) {
         next(error);
     }

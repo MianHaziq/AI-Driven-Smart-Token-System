@@ -48,8 +48,9 @@ const serviceIconMap = {
 
 const AdminDashboard = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [step, setStep] = useState(1); // 1: Service, 2: Center, 3: Queue Dashboard
+  const [step, setStep] = useState(1); // 1: Service, 2: City, 3: Center, 4: Queue Dashboard
   const [selectedService, setSelectedService] = useState(null);
+  const [selectedCity, setSelectedCity] = useState(null);
   const [selectedCenter, setSelectedCenter] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
@@ -63,7 +64,6 @@ const AdminDashboard = () => {
     queueStats,
     isLoading: tokensLoading,
     fetchTokens,
-    fetchQueueStats,
     callNextToken,
     completeToken,
     markNoShow,
@@ -96,34 +96,53 @@ const AdminDashboard = () => {
   // Fetch data when center is selected
   useEffect(() => {
     if (selectedCenter && selectedService) {
-      fetchTokens();
+      // Pass filters for service and center
+      fetchTokens({
+        service: selectedService.id,
+        city: selectedCenter.city,
+        serviceCenter: selectedCenter.name
+      });
       fetchCounters();
-      fetchQueueStats();
     }
-  }, [selectedCenter, selectedService, fetchTokens, fetchCounters, fetchQueueStats]);
+  }, [selectedCenter, selectedService, fetchTokens, fetchCounters]);
 
-  // Filter centers by selected service
+  // Get unique cities for selected service
+  const availableCities = [...new Set(
+    localCenters
+      .filter(c => selectedService ? c.serviceCategory === selectedService.id : true)
+      .map(c => c.city)
+  )].sort();
+
+  // Filter centers by selected service and city
   const filteredCenters = localCenters.filter((center) => {
     const matchesService = selectedService ? center.serviceCategory === selectedService.id : true;
+    const matchesCity = selectedCity ? center.city === selectedCity : true;
     const matchesSearch = center.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      center.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      center.city.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesService && matchesSearch;
+      center.address.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesService && matchesCity && matchesSearch;
   });
 
   const handleSelectService = (service) => {
     setSelectedService(service);
-    setStep(2);
+    setStep(2); // Go to city selection
+  };
+
+  const handleSelectCity = (city) => {
+    setSelectedCity(city);
+    setStep(3); // Go to center selection
   };
 
   const handleSelectCenter = (center) => {
     setSelectedCenter(center);
-    setStep(3);
+    setStep(4); // Go to queue dashboard
   };
 
   const handleGoBack = () => {
-    if (step === 3) {
+    if (step === 4) {
       setSelectedCenter(null);
+      setStep(3);
+    } else if (step === 3) {
+      setSelectedCity(null);
       setStep(2);
     } else if (step === 2) {
       setSelectedService(null);
@@ -140,20 +159,32 @@ const AdminDashboard = () => {
   const executeAction = async () => {
     setShowConfirm(false);
 
+    // Prepare filters for refreshing tokens
+    const filters = {
+      service: selectedService?.id,
+      city: selectedCenter?.city,
+      serviceCenter: selectedCenter?.name
+    };
+
     try {
       if (confirmAction === 'call') {
         const counterId = selectedToken?.counterId;
         const counter = counters.find(c => c._id === counterId || c.id === counterId);
 
-        if (counter) {
-          const result = await callNextToken(counter._id || counter.id);
-          if (result.success) {
-            toast.success(`Token called to ${counter.name}`);
-            fetchTokens();
-            fetchCounters();
-          } else {
-            toast.error(result.message || 'Failed to call token');
-          }
+        // Call next token - pass counter if available, and also pass center/city filters
+        const result = await callNextToken(
+          counter?._id || counter?.id || null,
+          selectedCenter?.name || null,
+          selectedCenter?.city || null
+        );
+
+        if (result.success) {
+          const counterName = result.data?.counter?.name || counter?.name || 'Counter';
+          toast.success(`Token ${result.data?.token?.tokenNumber} called to ${counterName}`);
+          fetchTokens(filters);
+          fetchCounters();
+        } else {
+          toast.error(result.message || 'Failed to call token');
         }
       } else if (confirmAction === 'complete') {
         const tokenId = selectedToken?._id || selectedToken?.id;
@@ -161,7 +192,7 @@ const AdminDashboard = () => {
           const result = await completeToken(tokenId);
           if (result.success) {
             toast.success('Token completed successfully');
-            fetchTokens();
+            fetchTokens(filters);
             fetchCounters();
           } else {
             toast.error(result.message || 'Failed to complete token');
@@ -173,7 +204,7 @@ const AdminDashboard = () => {
           const result = await markNoShow(tokenId);
           if (result.success) {
             toast.error('Token marked as no-show');
-            fetchTokens();
+            fetchTokens(filters);
             fetchCounters();
           } else {
             toast.error(result.message || 'Failed to mark as no-show');
@@ -203,7 +234,16 @@ const AdminDashboard = () => {
   };
 
   const handleRefresh = async () => {
-    await Promise.all([fetchTokens(), fetchCounters(), fetchQueueStats()]);
+    if (selectedCenter && selectedService) {
+      await Promise.all([
+        fetchTokens({
+          service: selectedService.id,
+          city: selectedCenter.city,
+          serviceCenter: selectedCenter.name
+        }),
+        fetchCounters()
+      ]);
+    }
     toast.success('Dashboard refreshed');
   };
 
@@ -336,7 +376,7 @@ const AdminDashboard = () => {
           </motion.div>
         )}
 
-        {/* Step 2: Select Center */}
+        {/* Step 2: Select City */}
         {step === 2 && selectedService && (
           <motion.div
             key="step2"
@@ -358,6 +398,70 @@ const AdminDashboard = () => {
                 <div className="flex items-center gap-3 mb-1">
                   <h1 className="text-2xl font-bold text-gray-900">{selectedService.name}</h1>
                   <span className="text-2xl">{selectedService.emoji}</span>
+                </div>
+                <p className="text-gray-600">Select a city</p>
+              </div>
+            </div>
+
+            <Card className="shadow-xl border-0">
+              <Card.Header border={false}>
+                <Card.Title subtitle={`${availableCities.length} cities available`}>
+                  <span className="flex items-center gap-2">
+                    <FiMapPin className="w-5 h-5 text-pakistan-green" />
+                    Select City
+                  </span>
+                </Card.Title>
+              </Card.Header>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {availableCities.map((city, index) => (
+                  <motion.div
+                    key={city}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() => handleSelectCity(city)}
+                    className="group p-5 border-2 rounded-2xl cursor-pointer transition-all duration-300 hover:shadow-lg border-gray-100 hover:border-pakistan-green/50 bg-white text-center"
+                  >
+                    <div className="w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center bg-pakistan-green-50 text-pakistan-green group-hover:bg-pakistan-green group-hover:text-white transition-all">
+                      <FiMapPin className="w-6 h-6" />
+                    </div>
+                    <h3 className="font-semibold text-gray-900 group-hover:text-pakistan-green transition-colors">
+                      {city}
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {localCenters.filter(c => c.city === city && c.serviceCategory === selectedService.id).length} centers
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Step 3: Select Center */}
+        {step === 3 && selectedService && selectedCity && (
+          <motion.div
+            key="step3"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="space-y-6"
+          >
+            {/* Header */}
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={FiArrowLeft}
+                onClick={handleGoBack}
+                className="!p-2"
+              />
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-1">
+                  <h1 className="text-2xl font-bold text-gray-900">{selectedService.name}</h1>
+                  <span className="text-2xl">{selectedService.emoji}</span>
+                  <Badge variant="info">{selectedCity}</Badge>
                 </div>
                 <p className="text-gray-600">Select a center to manage queue</p>
               </div>
@@ -446,10 +550,10 @@ const AdminDashboard = () => {
           </motion.div>
         )}
 
-        {/* Step 3: Queue Dashboard */}
-        {step === 3 && selectedCenter && (
+        {/* Step 4: Queue Dashboard */}
+        {step === 4 && selectedCenter && (
           <motion.div
-            key="step3"
+            key="step4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
@@ -609,14 +713,12 @@ const AdminDashboard = () => {
                                 <div className="text-center py-4">
                                   <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Now Serving</p>
                                   <p className="text-4xl font-bold text-pakistan-green">
-                                    {counter.currentToken.tokenNumber || counter.currentToken}
+                                    {counter.currentToken.tokenNumber}
                                   </p>
-                                  {counter.currentToken.customer && (
-                                    <>
-                                      <p className="text-sm text-gray-600 mt-2">{counter.currentToken.customer.fullName}</p>
-                                      <p className="text-xs text-gray-500">{counter.currentToken.serviceName}</p>
-                                    </>
-                                  )}
+                                  <p className="text-sm text-gray-600 mt-2">
+                                    {counter.currentToken.customer?.fullName || 'Customer'}
+                                  </p>
+                                  <p className="text-xs text-gray-500">{counter.currentToken.serviceName}</p>
                                 </div>
 
                                 <div className="flex gap-2">

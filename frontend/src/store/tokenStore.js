@@ -18,10 +18,24 @@ const useTokenStore = create((set, get) => ({
       const params = new URLSearchParams();
       if (filters.status) params.append('status', filters.status);
       if (filters.service) params.append('service', filters.service);
+      if (filters.city) params.append('city', filters.city);
+      if (filters.serviceCenter) params.append('serviceCenter', filters.serviceCenter);
       if (filters.date) params.append('date', filters.date);
 
       const response = await api.get(`/token/queue?${params.toString()}`);
-      set({ tokens: response.data.tokens || [], isLoading: false });
+      set({
+        tokens: response.data.tokens || [],
+        queueStats: {
+          total: response.data.total,
+          waiting: response.data.waiting,
+          serving: response.data.serving,
+          completed: response.data.completed,
+          noShows: response.data.noShows,
+          queue: response.data.queue,
+          currentlyServing: response.data.currentlyServing
+        },
+        isLoading: false
+      });
       return { success: true, data: response.data };
     } catch (error) {
       const message = error.response?.data?.message || 'Failed to fetch tokens';
@@ -115,10 +129,15 @@ const useTokenStore = create((set, get) => ({
   },
 
   // Book a token
-  bookToken: async (serviceId, priority = 'normal') => {
+  bookToken: async (serviceId, priority = 'normal', serviceCenter = null, city = null) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.post('/token/book', { serviceId, priority });
+      const response = await api.post('/token/book', {
+        serviceId,
+        priority,
+        serviceCenter,
+        city
+      });
       const newToken = response.data.token;
 
       set((state) => ({
@@ -159,13 +178,14 @@ const useTokenStore = create((set, get) => ({
   },
 
   // Call next token (admin)
-  callNextToken: async (counterId) => {
+  callNextToken: async (counterId = null, serviceCenter = null, city = null) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.post('/token/call-next', { counterId });
-
-      // Refresh tokens after calling
-      get().fetchTokens();
+      const response = await api.post('/token/call-next', {
+        counterId,
+        serviceCenter,
+        city
+      });
 
       set({ isLoading: false });
       return { success: true, data: response.data };

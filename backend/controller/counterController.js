@@ -48,7 +48,16 @@ const createCounter = async (req, res, next) => {
 /* ===================== READ ALL COUNTERS ===================== */
 const readCounters = async (req, res, next) => {
     try {
-        const counters = await Counter.find().sort({ createdAt: 1 });
+        const counters = await Counter.find()
+            .populate({
+                path: 'currentToken',
+                select: 'tokenNumber serviceName status priority customer',
+                populate: {
+                    path: 'customer',
+                    select: 'fullName phoneNumber'
+                }
+            })
+            .sort({ createdAt: 1 });
         res.json(counters);
     } catch (error) {
         next(error);

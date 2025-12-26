@@ -21,6 +21,14 @@ const tokenSchema = new mongoose.Schema(
             type: String,
             required: true
         },
+        serviceCenter: {
+            type: String,
+            default: null
+        },
+        city: {
+            type: String,
+            default: null
+        },
         status: {
             type: String,
             enum: ["waiting", "serving", "completed", "no-show", "cancelled"],

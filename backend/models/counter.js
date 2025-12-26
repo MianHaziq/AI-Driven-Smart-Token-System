@@ -13,7 +13,8 @@ const counterSchema = new mongoose.Schema(
             default: "offline"
         },
         currentToken: {
-            type: String,
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "token",
             default: null
         },
         operator: {
