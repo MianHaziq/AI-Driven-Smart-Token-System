@@ -206,6 +206,51 @@ const resetDailyCounter = async (req, res, next) => {
     }
 };
 
+/* ===================== TOGGLE TEST MODE ===================== */
+/**
+ * Toggle test mode for the application.
+ * When enabled, users can book tokens from any distance (location validation skipped).
+ */
+const toggleTestMode = async (req, res, next) => {
+    try {
+        let settings = await Settings.findOne();
+        if (!settings) {
+            settings = new Settings();
+        }
+
+        // Toggle the test mode
+        settings.testModeEnabled = !settings.testModeEnabled;
+        await settings.save();
+
+        res.json({
+            message: `Test mode ${settings.testModeEnabled ? 'enabled' : 'disabled'}`,
+            testModeEnabled: settings.testModeEnabled
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/* ===================== GET TEST MODE STATUS ===================== */
+/**
+ * Get the current test mode status (public endpoint for frontend).
+ */
+const getTestModeStatus = async (req, res, next) => {
+    try {
+        let settings = await Settings.findOne();
+        if (!settings) {
+            settings = new Settings();
+            await settings.save();
+        }
+
+        res.json({
+            testModeEnabled: settings.testModeEnabled || false
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getSettings,
     updateSettings,
@@ -214,5 +259,7 @@ module.exports = {
     updateNotificationSettings,
     updateOperatingHours,
     updateDisplaySettings,
-    resetDailyCounter
+    resetDailyCounter,
+    toggleTestMode,
+    getTestModeStatus
 };

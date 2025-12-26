@@ -4,6 +4,7 @@ const Service = require("../models/service");
 const Counter = require("../models/counter");
 const Settings = require("../models/settings");
 const TokenCounter = require("../models/tokenCounter");
+const { getDistanceAndDuration, isGoogleMapsConfigured } = require("../services/googleMaps");
 
 /* ===================== HELPER: CHECK IF VALID OBJECTID ===================== */
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id) && String(new mongoose.Types.ObjectId(id)) === id;
@@ -184,22 +185,23 @@ const bookToken = async (req, res, next) => {
 
         console.log('Book token request:', { serviceId, priority, serviceCenter, city, customerId, userLocation, centerLocation });
 
-        // Calculate distance and travel time early (validation will happen after we know queue wait time)
+        // Calculate distance and travel time using Google Maps API (or fallback)
         let distanceToCenter = null;
         let estimatedTravelTime = null;
+        let distanceSource = null;
 
         if (userLocation && centerLocation && userLocation.lat && userLocation.lng && centerLocation.lat && centerLocation.lng) {
-            // Calculate distance
-            distanceToCenter = calculateDistance(
-                userLocation.lat, userLocation.lng,
-                centerLocation.lat, centerLocation.lng
+            // Use Google Maps API for accurate distance and travel time
+            const distanceResult = await getDistanceAndDuration(
+                { lat: userLocation.lat, lng: userLocation.lng },
+                { lat: centerLocation.lat, lng: centerLocation.lng }
             );
-            distanceToCenter = Math.round(distanceToCenter * 10) / 10; // Round to 1 decimal
 
-            // Estimate travel time
-            estimatedTravelTime = estimateTravelTime(distanceToCenter);
+            distanceToCenter = distanceResult.distance.km;
+            estimatedTravelTime = distanceResult.duration.minutes;
+            distanceSource = distanceResult.source;
 
-            console.log(`Distance: ${distanceToCenter} km, Travel time: ${estimatedTravelTime} min`);
+            console.log(`Distance (${distanceSource}): ${distanceToCenter} km, Travel time: ${estimatedTravelTime} min`);
         }
 
         if (!serviceId) {
@@ -253,22 +255,34 @@ const bookToken = async (req, res, next) => {
             service.avgTime     // fallback avg time from service definition
         );
 
+        // Get settings to check for test mode
+        const settings = await getSettings();
+        const isTestMode = settings.testModeEnabled || false;
+
         // Location validation: Check if user can reach within allowed time
         // Formula: travelTime <= max(queueWaitTime, MIN_TRAVEL_TIME) + BUFFER_TIME
+        // Skip validation in test mode - but still log the info
+        let locationValidationSkipped = false;
         if (estimatedTravelTime !== null) {
             const baseTime = Math.max(estimatedWaitTime, MIN_TRAVEL_TIME_MINUTES);
             const maxAllowedTravelTime = baseTime + BUFFER_TIME_MINUTES;
-            console.log(`Location validation: Travel time ${estimatedTravelTime} min, Queue wait ${estimatedWaitTime} min, Base time ${baseTime} min, Max allowed ${maxAllowedTravelTime} min`);
+            console.log(`Location validation: Travel time ${estimatedTravelTime} min, Queue wait ${estimatedWaitTime} min, Base time ${baseTime} min, Max allowed ${maxAllowedTravelTime} min, Test mode: ${isTestMode}`);
 
             if (estimatedTravelTime > maxAllowedTravelTime) {
-                return res.status(400).json({
-                    message: `You are too far from the center. Your travel time (${estimatedTravelTime} min) exceeds the maximum allowed (${maxAllowedTravelTime} min).`,
-                    distanceToCenter,
-                    estimatedTravelTime,
-                    estimatedWaitTime,
-                    maxAllowedTravelTime,
-                    canBook: false
-                });
+                if (isTestMode) {
+                    // In test mode, skip validation but mark it
+                    locationValidationSkipped = true;
+                    console.log(`TEST MODE: Location validation skipped. User is ${estimatedTravelTime - maxAllowedTravelTime} min too far.`);
+                } else {
+                    return res.status(400).json({
+                        message: `You are too far from the center. Your travel time (${estimatedTravelTime} min) exceeds the maximum allowed (${maxAllowedTravelTime} min).`,
+                        distanceToCenter,
+                        estimatedTravelTime,
+                        estimatedWaitTime,
+                        maxAllowedTravelTime,
+                        canBook: false
+                    });
+                }
             }
         }
 
@@ -312,8 +326,12 @@ const bookToken = async (req, res, next) => {
                 city: newToken.city,
                 status: newToken.status,
                 priority: newToken.priority,
-                createdAt: newToken.createdAt
-            }
+                createdAt: newToken.createdAt,
+                distanceToCenter: newToken.distanceToCenter,
+                estimatedTravelTime: newToken.estimatedTravelTime
+            },
+            testMode: isTestMode,
+            locationValidationSkipped
         });
 
     } catch (error) {
@@ -1169,6 +1187,52 @@ const getTokenStatus = async (req, res, next) => {
     }
 };
 
+/* ===================== CALCULATE DISTANCE TO CENTER ===================== */
+/**
+ * Calculate distance and travel time from user location to service center
+ * Uses Google Maps Distance Matrix API for accurate results
+ */
+const calculateDistanceToCenter = async (req, res, next) => {
+    try {
+        const { userLocation, centerLocation } = req.body;
+
+        if (!userLocation || !centerLocation) {
+            return res.status(400).json({
+                message: "Both userLocation and centerLocation are required"
+            });
+        }
+
+        if (!userLocation.lat || !userLocation.lng || !centerLocation.lat || !centerLocation.lng) {
+            return res.status(400).json({
+                message: "Invalid coordinates. Both lat and lng are required for each location"
+            });
+        }
+
+        // Use Google Maps API for accurate distance and travel time
+        const distanceResult = await getDistanceAndDuration(
+            { lat: userLocation.lat, lng: userLocation.lng },
+            { lat: centerLocation.lat, lng: centerLocation.lng }
+        );
+
+        res.json({
+            success: true,
+            source: distanceResult.source, // 'google_maps' or 'fallback'
+            distance: {
+                km: distanceResult.distance.km,
+                text: distanceResult.distance.text
+            },
+            duration: {
+                minutes: distanceResult.duration.minutes,
+                text: distanceResult.duration.text
+            },
+            isGoogleMapsConfigured: isGoogleMapsConfigured()
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     bookToken,
     getQueueStatus,
@@ -1184,5 +1248,6 @@ module.exports = {
     cancelToken,
     markArrived,
     checkExpiredTokens,
-    getTokenStatus
+    getTokenStatus,
+    calculateDistanceToCenter
 };

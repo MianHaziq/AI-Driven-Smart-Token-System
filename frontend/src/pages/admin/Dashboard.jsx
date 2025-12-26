@@ -22,6 +22,8 @@ import {
   FiCoffee,
   FiActivity,
   FiUserCheck,
+  FiToggleLeft,
+  FiToggleRight,
 } from 'react-icons/fi';
 import {
   Card,
@@ -64,9 +66,12 @@ const AdminDashboard = () => {
     tokens,
     queueStats,
     queueCounts,
+    testModeEnabled,
     isLoading: tokensLoading,
     fetchTokens,
     fetchQueueCounts,
+    fetchTestModeStatus,
+    toggleTestMode,
     callNextToken,
     completeToken,
     markNoShow,
@@ -87,10 +92,24 @@ const AdminDashboard = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch queue counts on mount
+  // Fetch queue counts and test mode status on mount
   useEffect(() => {
     fetchQueueCounts();
-  }, [fetchQueueCounts]);
+    fetchTestModeStatus();
+  }, [fetchQueueCounts, fetchTestModeStatus]);
+
+  // Handle test mode toggle
+  const handleToggleTestMode = async () => {
+    const result = await toggleTestMode();
+    if (result.success) {
+      toast.success(result.message, {
+        icon: result.testModeEnabled ? '🧪' : '🔒',
+        duration: 3000
+      });
+    } else {
+      toast.error(result.message || 'Failed to toggle test mode');
+    }
+  };
 
   // Update local centers with real queue counts
   useEffect(() => {
@@ -352,21 +371,47 @@ const AdminDashboard = () => {
                 <div className="flex items-center gap-3 mb-1">
                   <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
                   <Badge variant="success" dot>Live</Badge>
+                  {testModeEnabled && (
+                    <Badge variant="warning" className="animate-pulse">
+                      Test Mode
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-gray-600">Select a service to manage queues</p>
               </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-500">
-                  {currentTime.toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </p>
-                <p className="text-lg font-semibold text-pakistan-green">
-                  {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                </p>
+              <div className="flex items-center gap-4">
+                {/* Test Mode Toggle */}
+                <button
+                  onClick={handleToggleTestMode}
+                  className={`
+                    flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all duration-300
+                    ${testModeEnabled
+                      ? 'bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100'
+                      : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                    }
+                  `}
+                  title={testModeEnabled ? 'Disable Test Mode' : 'Enable Test Mode'}
+                >
+                  {testModeEnabled ? (
+                    <FiToggleRight className="w-5 h-5" />
+                  ) : (
+                    <FiToggleLeft className="w-5 h-5" />
+                  )}
+                  <span className="text-sm font-medium">Test Mode</span>
+                </button>
+                <div className="text-right">
+                  <p className="text-sm text-gray-500">
+                    {currentTime.toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </p>
+                  <p className="text-lg font-semibold text-pakistan-green">
+                    {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
               </div>
             </div>
 

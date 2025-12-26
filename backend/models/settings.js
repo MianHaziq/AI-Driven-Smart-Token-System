@@ -102,6 +102,12 @@ const settingsSchema = new mongoose.Schema(
             default: ["mon", "tue", "wed", "thu", "fri"]
         },
 
+        // Test Mode - allows booking from any distance for testing
+        testModeEnabled: {
+            type: Boolean,
+            default: false
+        },
+
         // Display
         displayLanguage: {
             type: String,
