@@ -93,6 +93,43 @@ const tokenSchema = new mongoose.Schema(
                 type: String,
                 default: null
             }
+        },
+        // Location tracking fields
+        userLocation: {
+            lat: { type: Number, default: null },
+            lng: { type: Number, default: null }
+        },
+        centerLocation: {
+            lat: { type: Number, default: null },
+            lng: { type: Number, default: null }
+        },
+        distanceToCenter: {
+            type: Number, // Distance in kilometers
+            default: null
+        },
+        estimatedTravelTime: {
+            type: Number, // Travel time in minutes
+            default: null
+        },
+        // Arrival tracking
+        hasArrived: {
+            type: Boolean,
+            default: false
+        },
+        arrivedAt: {
+            type: Date,
+            default: null
+        },
+        // Auto-expire tracking (5 min after being called)
+        expireAt: {
+            type: Date,
+            default: null
+        },
+        // Cancellation reason
+        cancellationReason: {
+            type: String,
+            enum: ['user_cancelled', 'no_arrival', 'auto_expired', null],
+            default: null
         }
     },
     {

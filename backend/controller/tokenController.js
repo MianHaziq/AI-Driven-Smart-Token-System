@@ -8,6 +8,46 @@ const TokenCounter = require("../models/tokenCounter");
 /* ===================== HELPER: CHECK IF VALID OBJECTID ===================== */
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id) && String(new mongoose.Types.ObjectId(id)) === id;
 
+/* ===================== HELPER: CALCULATE DISTANCE (HAVERSINE FORMULA) ===================== */
+/**
+ * Calculates the distance between two coordinates using the Haversine formula.
+ *
+ * @param {number} lat1 - Latitude of first point
+ * @param {number} lng1 - Longitude of first point
+ * @param {number} lat2 - Latitude of second point
+ * @param {number} lng2 - Longitude of second point
+ * @returns {number} Distance in kilometers
+ */
+const calculateDistance = (lat1, lng1, lat2, lng2) => {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in km
+};
+
+/* ===================== HELPER: ESTIMATE TRAVEL TIME ===================== */
+/**
+ * Estimates travel time based on distance.
+ * Assumes average city traffic speed of 25 km/h (conservative estimate for Pakistan cities).
+ *
+ * @param {number} distanceKm - Distance in kilometers
+ * @returns {number} Estimated travel time in minutes
+ */
+const estimateTravelTime = (distanceKm) => {
+    const avgSpeedKmPerHour = 25; // Conservative city traffic speed
+    const timeHours = distanceKm / avgSpeedKmPerHour;
+    return Math.ceil(timeHours * 60); // Convert to minutes and round up
+};
+
+/* ===================== CONSTANTS ===================== */
+const BUFFER_TIME_MINUTES = 5; // Extra buffer time for travel (queue wait + 5 min)
+const ARRIVAL_WINDOW_MINUTES = 5; // Time to arrive after being called
+
 /* ===================== HELPER: GET OR CREATE SETTINGS ===================== */
 const getSettings = async () => {
     let settings = await Settings.findOne();
@@ -137,10 +177,28 @@ const generateTokenNumber = async (category, city, serviceCenter) => {
 /* ===================== BOOK TOKEN ===================== */
 const bookToken = async (req, res, next) => {
     try {
-        const { serviceId, priority, serviceCenter, city } = req.body;
+        const { serviceId, priority, serviceCenter, city, userLocation, centerLocation } = req.body;
         const customerId = req.user.id;
 
-        console.log('Book token request:', { serviceId, priority, serviceCenter, city, customerId });
+        console.log('Book token request:', { serviceId, priority, serviceCenter, city, customerId, userLocation, centerLocation });
+
+        // Calculate distance and travel time early (validation will happen after we know queue wait time)
+        let distanceToCenter = null;
+        let estimatedTravelTime = null;
+
+        if (userLocation && centerLocation && userLocation.lat && userLocation.lng && centerLocation.lat && centerLocation.lng) {
+            // Calculate distance
+            distanceToCenter = calculateDistance(
+                userLocation.lat, userLocation.lng,
+                centerLocation.lat, centerLocation.lng
+            );
+            distanceToCenter = Math.round(distanceToCenter * 10) / 10; // Round to 1 decimal
+
+            // Estimate travel time
+            estimatedTravelTime = estimateTravelTime(distanceToCenter);
+
+            console.log(`Distance: ${distanceToCenter} km, Travel time: ${estimatedTravelTime} min`);
+        }
 
         if (!serviceId) {
             return res.status(400).json({ message: "Service is required" });
@@ -193,6 +251,24 @@ const bookToken = async (req, res, next) => {
             service.avgTime     // fallback avg time from service definition
         );
 
+        // Location validation: Check if user can reach within queue wait time + buffer
+        // Formula: travelTime <= estimatedWaitTime + 5 min buffer
+        if (estimatedTravelTime !== null) {
+            const maxAllowedTravelTime = estimatedWaitTime + BUFFER_TIME_MINUTES;
+            console.log(`Location validation: Travel time ${estimatedTravelTime} min, Queue wait ${estimatedWaitTime} min, Max allowed ${maxAllowedTravelTime} min`);
+
+            if (estimatedTravelTime > maxAllowedTravelTime) {
+                return res.status(400).json({
+                    message: `You are too far from the center. Your travel time (${estimatedTravelTime} min) exceeds the queue wait time (${estimatedWaitTime} min) + ${BUFFER_TIME_MINUTES} min buffer.`,
+                    distanceToCenter,
+                    estimatedTravelTime,
+                    estimatedWaitTime,
+                    maxAllowedTravelTime,
+                    canBook: false
+                });
+            }
+        }
+
         const newToken = new Token({
             tokenNumber,
             tokenDate: today,
@@ -204,7 +280,12 @@ const bookToken = async (req, res, next) => {
             status: "waiting",
             priority: priority || "normal",
             position,
-            estimatedWaitTime
+            estimatedWaitTime,
+            // Location data
+            userLocation: userLocation || { lat: null, lng: null },
+            centerLocation: centerLocation || { lat: null, lng: null },
+            distanceToCenter,
+            estimatedTravelTime
         });
 
         console.log('Saving token...');
@@ -306,6 +387,11 @@ const getQueueStatus = async (req, res, next) => {
                 position: t.position,
                 status: t.status,
                 estimatedWaitTime: t.estimatedWaitTime,
+                hasArrived: t.hasArrived || false,
+                arrivedAt: t.arrivedAt,
+                expireAt: t.expireAt,
+                distanceToCenter: t.distanceToCenter,
+                estimatedTravelTime: t.estimatedTravelTime,
                 createdAt: t.createdAt,
                 calledAt: t.calledAt,
                 completedAt: t.completedAt
@@ -330,7 +416,11 @@ const getQueueStatus = async (req, res, next) => {
                 serviceName: t.serviceName,
                 serviceCenter: t.serviceCenter,
                 city: t.city,
-                counter: t.counter
+                counter: t.counter,
+                hasArrived: t.hasArrived || false,
+                arrivedAt: t.arrivedAt,
+                expireAt: t.expireAt,
+                calledAt: t.calledAt
             }))
         });
 
@@ -392,10 +482,13 @@ const callNextToken = async (req, res, next) => {
         }
 
         // Update token
+        const now = new Date();
         nextToken.status = "serving";
         nextToken.counter = counter._id;
-        nextToken.calledAt = new Date();
-        nextToken.serviceStartTime = new Date();
+        nextToken.calledAt = now;
+        nextToken.serviceStartTime = now;
+        // Set expireAt to 5 minutes from now (auto-cancel if not arrived)
+        nextToken.expireAt = new Date(now.getTime() + ARRIVAL_WINDOW_MINUTES * 60 * 1000);
         await nextToken.save();
 
         // Update counter
@@ -923,6 +1016,156 @@ const cancelToken = async (req, res, next) => {
     }
 };
 
+/* ===================== MARK CUSTOMER ARRIVED ===================== */
+/**
+ * Marks that a customer has arrived at the counter.
+ * This stops the auto-cancel timer.
+ */
+const markArrived = async (req, res, next) => {
+    try {
+        const { tokenId } = req.params;
+
+        const token = await Token.findById(tokenId);
+        if (!token) {
+            return res.status(404).json({ message: "Token not found" });
+        }
+
+        if (token.status !== "serving") {
+            return res.status(400).json({ message: "Token is not currently being served" });
+        }
+
+        if (token.hasArrived) {
+            return res.status(400).json({ message: "Customer has already arrived" });
+        }
+
+        token.hasArrived = true;
+        token.arrivedAt = new Date();
+        token.expireAt = null; // Clear expiration since customer arrived
+        await token.save();
+
+        res.json({
+            message: "Customer marked as arrived",
+            token: {
+                _id: token._id,
+                tokenNumber: token.tokenNumber,
+                hasArrived: token.hasArrived,
+                arrivedAt: token.arrivedAt
+            }
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+/* ===================== CHECK AND CANCEL EXPIRED TOKENS ===================== */
+/**
+ * Checks for tokens that have expired (5 min after being called without arrival)
+ * and automatically cancels them.
+ * This should be called periodically or before calling next token.
+ */
+const checkExpiredTokens = async (req, res, next) => {
+    try {
+        const now = new Date();
+
+        // Find tokens that are serving, not arrived, and past expiration
+        const expiredTokens = await Token.find({
+            status: "serving",
+            hasArrived: false,
+            expireAt: { $lte: now }
+        }).populate('customer', 'fullName phoneNumber');
+
+        const cancelledTokens = [];
+
+        for (const token of expiredTokens) {
+            // Cancel the token
+            token.status = "cancelled";
+            token.cancellationReason = "auto_expired";
+            token.completedAt = now;
+            await token.save();
+
+            // Free up the counter
+            if (token.counter) {
+                const counter = await Counter.findById(token.counter);
+                if (counter) {
+                    counter.status = "available";
+                    counter.currentToken = null;
+                    await counter.save();
+                }
+            }
+
+            // Update positions
+            await Token.updateMany(
+                { status: "waiting", position: { $gt: token.position } },
+                { $inc: { position: -1 } }
+            );
+
+            cancelledTokens.push({
+                tokenNumber: token.tokenNumber,
+                customerName: token.customer?.fullName || 'Customer',
+                customerPhone: token.customer?.phoneNumber || '',
+                calledAt: token.calledAt,
+                expiredAt: now
+            });
+
+            console.log(`Token ${token.tokenNumber} auto-cancelled due to no arrival within 5 minutes`);
+        }
+
+        res.json({
+            message: `${cancelledTokens.length} token(s) auto-cancelled`,
+            cancelledTokens
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+/* ===================== GET TOKEN STATUS WITH EXPIRY INFO ===================== */
+/**
+ * Gets detailed token status including expiry countdown for serving tokens.
+ */
+const getTokenStatus = async (req, res, next) => {
+    try {
+        const { tokenId } = req.params;
+
+        const token = await Token.findById(tokenId)
+            .populate('customer', 'fullName phoneNumber')
+            .populate('counter', 'name');
+
+        if (!token) {
+            return res.status(404).json({ message: "Token not found" });
+        }
+
+        let timeRemaining = null;
+        if (token.status === "serving" && !token.hasArrived && token.expireAt) {
+            const now = new Date();
+            timeRemaining = Math.max(0, Math.floor((token.expireAt - now) / 1000)); // seconds remaining
+        }
+
+        res.json({
+            token: {
+                _id: token._id,
+                tokenNumber: token.tokenNumber,
+                status: token.status,
+                hasArrived: token.hasArrived,
+                arrivedAt: token.arrivedAt,
+                calledAt: token.calledAt,
+                expireAt: token.expireAt,
+                timeRemaining, // seconds until auto-cancel
+                customerName: token.customer?.fullName || 'Customer',
+                customerPhone: token.customer?.phoneNumber || '',
+                counterName: token.counter?.name || null,
+                distanceToCenter: token.distanceToCenter,
+                estimatedTravelTime: token.estimatedTravelTime
+            }
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     bookToken,
     getQueueStatus,
@@ -935,5 +1178,8 @@ module.exports = {
     getDashboardStats,
     getAnalytics,
     getQueueCountsByCenter,
-    cancelToken
+    cancelToken,
+    markArrived,
+    checkExpiredTokens,
+    getTokenStatus
 };

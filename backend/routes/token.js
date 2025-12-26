@@ -15,7 +15,10 @@ const {
     getDashboardStats,
     getAnalytics,
     getQueueCountsByCenter,
-    cancelToken
+    cancelToken,
+    markArrived,
+    checkExpiredTokens,
+    getTokenStatus
 } = require("../controller/tokenController");
 
 // Public routes
@@ -37,5 +40,8 @@ router.patch("/cancel/:tokenId", authorization, validateObjectId('tokenId'), can
 router.post("/call-next", authorization, isAdmin, callNextToken);
 router.patch("/complete/:tokenId", authorization, isAdmin, validateObjectId('tokenId'), completeToken);
 router.patch("/no-show/:tokenId", authorization, isAdmin, validateObjectId('tokenId'), markNoShow);
+router.patch("/arrived/:tokenId", authorization, isAdmin, validateObjectId('tokenId'), markArrived);
+router.post("/check-expired", authorization, isAdmin, checkExpiredTokens);
+router.get("/status/:tokenId", authorization, validateObjectId('tokenId'), getTokenStatus);
 
 module.exports = router;

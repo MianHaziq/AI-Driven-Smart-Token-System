@@ -47,6 +47,28 @@ const serviceIconMap = {
   FiDollarSign: FiDollarSign,
 };
 
+// Helper: Calculate distance using Haversine formula
+const calculateDistance = (lat1, lng1, lat2, lng2) => {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
+// Helper: Estimate travel time (25 km/h average city speed)
+const estimateTravelTime = (distanceKm) => {
+  const avgSpeedKmPerHour = 25;
+  return Math.ceil((distanceKm / avgSpeedKmPerHour) * 60);
+};
+
+// Constants
+const BUFFER_TIME = 5; // 5 minutes buffer (travelTime <= queueWaitTime + 5 min)
+
 const BookToken = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -66,6 +88,12 @@ const BookToken = () => {
   const [centers, setCenters] = useState([]);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [enableLocation, setEnableLocation] = useState(true);
+
+  // Location state
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationError, setLocationError] = useState(null);
+  const [gettingLocation, setGettingLocation] = useState(false);
+  const [distanceInfo, setDistanceInfo] = useState(null);
 
   // Load centers and fetch real queue counts from API
   useEffect(() => {
@@ -145,6 +173,67 @@ const BookToken = () => {
     }
   }, [isAuthenticated, location.state]);
 
+  // Get user location when enableLocation is true
+  useEffect(() => {
+    if (enableLocation && !userLocation && !gettingLocation) {
+      setGettingLocation(true);
+      setLocationError(null);
+
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setUserLocation({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            });
+            setGettingLocation(false);
+          },
+          (error) => {
+            console.error('Geolocation error:', error);
+            setLocationError(error.message);
+            setGettingLocation(false);
+            // Don't show error toast immediately, just log it
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 300000 // Cache for 5 minutes
+          }
+        );
+      } else {
+        setLocationError('Geolocation not supported');
+        setGettingLocation(false);
+      }
+    }
+  }, [enableLocation, userLocation, gettingLocation]);
+
+  // Calculate distance when center is selected and user location is available
+  // Formula: travelTime <= queueWaitTime + 5 min buffer
+  useEffect(() => {
+    if (selectedCenter && userLocation && selectedCenter.coordinates) {
+      const distance = calculateDistance(
+        userLocation.lat,
+        userLocation.lng,
+        selectedCenter.coordinates.lat,
+        selectedCenter.coordinates.lng
+      );
+      const travelTime = estimateTravelTime(distance);
+      const queueWaitTime = selectedCenter.avgWaitTime || 0;
+      const maxAllowedTravelTime = queueWaitTime + BUFFER_TIME;
+      const canReach = travelTime <= maxAllowedTravelTime;
+
+      setDistanceInfo({
+        distance: Math.round(distance * 10) / 10,
+        travelTime,
+        canReach,
+        queueWaitTime,
+        maxAllowedTravelTime
+      });
+    } else {
+      setDistanceInfo(null);
+    }
+  }, [selectedCenter, userLocation]);
+
   // Filter centers by city and service category
   const filteredCenters = centers.filter((center) => {
     const matchesCity = selectedCity ?
@@ -200,6 +289,16 @@ const BookToken = () => {
       return;
     }
 
+    // Validate location if enabled
+    // Formula: travelTime <= queueWaitTime + 5 min buffer
+    if (enableLocation && distanceInfo && !distanceInfo.canReach) {
+      toast.error(
+        `You are too far from the center. Your travel time (${distanceInfo.travelTime} min) exceeds queue wait time (${distanceInfo.queueWaitTime} min) + ${BUFFER_TIME} min buffer.`,
+        { duration: 5000, icon: '📍' }
+      );
+      return;
+    }
+
     if (!isAuthenticated) {
       localStorage.setItem('pendingBooking', JSON.stringify({
         service: selectedService,
@@ -221,13 +320,20 @@ const BookToken = () => {
 
     setLoading(true);
     try {
-      // Call the API to book token with center and city
-      // selectedCity is an object { id, name, province }, we need just the name string
+      // Prepare location data if available
+      const locationData = enableLocation && userLocation && selectedCenter?.coordinates ? {
+        userLocation,
+        centerLocation: selectedCenter.coordinates
+      } : {};
+
+      // Call the API to book token with center, city, and location
       const result = await bookToken(
         selectedSubService.id,
         'normal',
         selectedCenter?.name || null,
-        selectedCity?.name || selectedCity || null
+        selectedCity?.name || selectedCity || null,
+        locationData.userLocation,
+        locationData.centerLocation
       );
 
       if (result.success) {
@@ -250,6 +356,18 @@ const BookToken = () => {
           icon: '🎫',
           duration: 4000,
         });
+        // Show warning about arriving on time
+        setTimeout(() => {
+          toast('Please arrive on time! Your token will be cancelled if you don\'t arrive within 5 minutes of being called.', {
+            icon: '⚠️',
+            duration: 6000,
+            style: {
+              background: '#FEF3C7',
+              color: '#92400E',
+              border: '1px solid #F59E0B'
+            }
+          });
+        }, 500);
       } else {
         toast.error(result.message || 'Booking failed. Please try again.');
       }
@@ -971,9 +1089,23 @@ const BookToken = () => {
                     <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
                       Token Booked Successfully!
                     </h2>
-                    <p className="text-gray-600 mb-8">
+                    <p className="text-gray-600 mb-4">
                       Your token has been confirmed. Please arrive on time.
                     </p>
+                    {/* Warning Banner */}
+                    <div className="mx-4 sm:mx-auto sm:max-w-md mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                          <span className="text-lg">⚠️</span>
+                        </div>
+                        <div className="text-left">
+                          <p className="font-medium text-amber-800">Important Notice</p>
+                          <p className="text-sm text-amber-700">
+                            Please arrive on time! Your token will be automatically cancelled if you don't arrive within 5 minutes of being called.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </motion.div>
 
                   {/* Token Display */}

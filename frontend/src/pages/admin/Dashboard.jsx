@@ -21,6 +21,7 @@ import {
   FiNavigation,
   FiCoffee,
   FiActivity,
+  FiUserCheck,
 } from 'react-icons/fi';
 import {
   Card,
@@ -69,6 +70,8 @@ const AdminDashboard = () => {
     callNextToken,
     completeToken,
     markNoShow,
+    markArrived,
+    checkExpiredTokens,
   } = useTokenStore();
 
   const {
@@ -117,6 +120,35 @@ const AdminDashboard = () => {
       fetchCounters();
     }
   }, [selectedCenter, fetchTokens, fetchCounters]);
+
+  // Check for expired tokens every 30 seconds when center is selected
+  useEffect(() => {
+    if (!selectedCenter) return;
+
+    const checkExpired = async () => {
+      const result = await checkExpiredTokens();
+      if (result.success && result.data?.cancelledTokens?.length > 0) {
+        result.data.cancelledTokens.forEach(token => {
+          toast.error(`Token ${token.tokenNumber} auto-cancelled (no arrival in 5 min)`, {
+            icon: '⏰',
+            duration: 5000
+          });
+        });
+        // Refresh the queue
+        fetchTokens({
+          city: selectedCenter.city,
+          serviceCenter: selectedCenter.name
+        });
+        fetchCounters();
+      }
+    };
+
+    // Check immediately and then every 30 seconds
+    checkExpired();
+    const interval = setInterval(checkExpired, 30000);
+
+    return () => clearInterval(interval);
+  }, [selectedCenter, checkExpiredTokens, fetchTokens, fetchCounters]);
 
   // Get unique cities for selected service
   const availableCities = [...new Set(
@@ -219,6 +251,18 @@ const AdminDashboard = () => {
             fetchCounters();
           } else {
             toast.error(result.message || 'Failed to mark as no-show');
+          }
+        }
+      } else if (confirmAction === 'arrived') {
+        const tokenId = selectedToken?._id || selectedToken?.id;
+        if (tokenId) {
+          const result = await markArrived(tokenId);
+          if (result.success) {
+            toast.success('Customer marked as arrived', { icon: '✅' });
+            fetchTokens(filters);
+            fetchCounters();
+          } else {
+            toast.error(result.message || 'Failed to mark as arrived');
           }
         }
       } else if (confirmAction === 'break') {
@@ -721,13 +765,45 @@ const AdminDashboard = () => {
                                     {counter.currentToken.customerName || counter.currentToken.customer?.fullName || 'Customer'}
                                   </p>
                                   <p className="text-xs text-gray-500">{counter.currentToken.serviceName}</p>
+
+                                  {/* Arrival Status */}
+                                  {counter.currentToken.hasArrived ? (
+                                    <div className="mt-3 inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
+                                      <FiUserCheck className="w-4 h-4" />
+                                      Customer Arrived
+                                    </div>
+                                  ) : counter.currentToken.expireAt ? (
+                                    <div className="mt-3">
+                                      <div className="inline-flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm">
+                                        <FiClock className="w-4 h-4" />
+                                        Waiting for arrival
+                                      </div>
+                                      <p className="text-xs text-amber-600 mt-1">
+                                        Auto-cancel in {Math.max(0, Math.floor((new Date(counter.currentToken.expireAt) - currentTime) / 1000))}s
+                                      </p>
+                                    </div>
+                                  ) : null}
                                 </div>
+
+                                {/* Arrival Button - Show if not yet arrived */}
+                                {!counter.currentToken.hasArrived && (
+                                  <Button
+                                    fullWidth
+                                    variant="outline"
+                                    icon={FiUserCheck}
+                                    className="text-green-600 border-green-200 hover:bg-green-50"
+                                    onClick={() => handleAction('arrived', counter.currentToken, counterId)}
+                                  >
+                                    Mark Arrived
+                                  </Button>
+                                )}
 
                                 <div className="flex gap-2">
                                   <Button
                                     fullWidth
                                     icon={FiCheckCircle}
                                     onClick={() => handleAction('complete', counter.currentToken, counterId)}
+                                    disabled={!counter.currentToken.hasArrived}
                                   >
                                     Complete
                                   </Button>
@@ -885,6 +961,7 @@ const AdminDashboard = () => {
           confirmAction === 'call' ? 'Call Token' :
           confirmAction === 'complete' ? 'Complete Token' :
           confirmAction === 'noshow' ? 'Mark as No Show' :
+          confirmAction === 'arrived' ? 'Mark Customer Arrived' :
           confirmAction === 'break' ? 'Counter Break' :
           'Confirm Action'
         }
@@ -892,6 +969,7 @@ const AdminDashboard = () => {
           confirmAction === 'call' ? 'Call next token to this counter?' :
           confirmAction === 'complete' ? 'Mark the current token as completed?' :
           confirmAction === 'noshow' ? 'Mark the current token as no-show? This action cannot be undone.' :
+          confirmAction === 'arrived' ? 'Confirm that the customer has arrived at the counter?' :
           confirmAction === 'break' ? 'Toggle counter break status?' :
           'Are you sure?'
         }
@@ -899,6 +977,7 @@ const AdminDashboard = () => {
           confirmAction === 'call' ? 'Call' :
           confirmAction === 'complete' ? 'Complete' :
           confirmAction === 'noshow' ? 'Mark No Show' :
+          confirmAction === 'arrived' ? 'Confirm Arrived' :
           confirmAction === 'break' ? 'Confirm' :
           'Confirm'
         }

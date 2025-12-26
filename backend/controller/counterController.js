@@ -51,7 +51,7 @@ const readCounters = async (req, res, next) => {
         const counters = await Counter.find()
             .populate({
                 path: 'currentToken',
-                select: 'tokenNumber serviceName status priority customer',
+                select: 'tokenNumber serviceName status priority customer hasArrived arrivedAt expireAt calledAt distanceToCenter estimatedTravelTime',
                 populate: {
                     path: 'customer',
                     select: 'fullName phoneNumber'
@@ -62,8 +62,12 @@ const readCounters = async (req, res, next) => {
         // Format response with customerName for easier frontend access
         const formattedCounters = counters.map(counter => {
             const counterObj = counter.toObject();
-            if (counterObj.currentToken && counterObj.currentToken.customer) {
-                counterObj.currentToken.customerName = counterObj.currentToken.customer.fullName || 'Customer';
+            if (counterObj.currentToken) {
+                if (counterObj.currentToken.customer) {
+                    counterObj.currentToken.customerName = counterObj.currentToken.customer.fullName || 'Customer';
+                }
+                // Ensure hasArrived defaults to false
+                counterObj.currentToken.hasArrived = counterObj.currentToken.hasArrived || false;
             }
             return counterObj;
         });

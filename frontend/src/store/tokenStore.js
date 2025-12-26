@@ -141,14 +141,16 @@ const useTokenStore = create((set, get) => ({
   },
 
   // Book a token
-  bookToken: async (serviceId, priority = 'normal', serviceCenter = null, city = null) => {
+  bookToken: async (serviceId, priority = 'normal', serviceCenter = null, city = null, userLocation = null, centerLocation = null) => {
     set({ isLoading: true, error: null });
     try {
       const response = await api.post('/token/book', {
         serviceId,
         priority,
         serviceCenter,
-        city
+        city,
+        userLocation,
+        centerLocation
       });
       const newToken = response.data.token;
 
@@ -247,6 +249,47 @@ const useTokenStore = create((set, get) => ({
       const message = error.response?.data?.message || 'Failed to mark as no-show';
       set({ error: message, isLoading: false });
       return { success: false, message };
+    }
+  },
+
+  // Mark customer as arrived (admin)
+  markArrived: async (tokenId) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.patch(`/token/arrived/${tokenId}`);
+
+      set((state) => ({
+        tokens: state.tokens.map((t) =>
+          t._id === tokenId ? { ...t, hasArrived: true, arrivedAt: new Date(), expireAt: null } : t
+        ),
+        isLoading: false,
+      }));
+
+      return { success: true, data: response.data };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to mark as arrived';
+      set({ error: message, isLoading: false });
+      return { success: false, message };
+    }
+  },
+
+  // Check and cancel expired tokens (admin)
+  checkExpiredTokens: async () => {
+    try {
+      const response = await api.post('/token/check-expired');
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message };
+    }
+  },
+
+  // Get token status with expiry info
+  getTokenStatus: async (tokenId) => {
+    try {
+      const response = await api.get(`/token/status/${tokenId}`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message };
     }
   },
 
