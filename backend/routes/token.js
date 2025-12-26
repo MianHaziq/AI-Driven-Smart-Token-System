@@ -18,7 +18,8 @@ const {
     cancelToken,
     markArrived,
     checkExpiredTokens,
-    getTokenStatus
+    getTokenStatus,
+    calculateDistanceToCenter
 } = require("../controller/tokenController");
 
 // Public routes
@@ -26,6 +27,7 @@ router.get("/queue", getQueueStatus);
 router.get("/stats", getDashboardStats);
 router.get("/queue-counts", getQueueCountsByCenter);
 router.get("/number/:tokenNumber", getTokenByNumber);
+router.post("/calculate-distance", calculateDistanceToCenter); // Calculate distance using Google Maps API
 
 // Admin routes for analytics
 router.get("/analytics", authorization, isAdmin, getAnalytics);
