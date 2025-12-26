@@ -67,7 +67,9 @@ const estimateTravelTime = (distanceKm) => {
 };
 
 // Constants
-const BUFFER_TIME = 5; // 5 minutes buffer (travelTime <= queueWaitTime + 5 min)
+const MIN_TRAVEL_TIME = 15; // Minimum allowed travel time (even when queue is empty)
+const BUFFER_TIME = 5; // Extra buffer time
+// Formula: travelTime <= max(queueWaitTime, MIN_TRAVEL_TIME) + BUFFER_TIME
 
 const BookToken = () => {
   const navigate = useNavigate();
@@ -208,7 +210,7 @@ const BookToken = () => {
   }, [enableLocation, userLocation, gettingLocation]);
 
   // Calculate distance when center is selected and user location is available
-  // Formula: travelTime <= queueWaitTime + 5 min buffer
+  // Formula: travelTime <= max(queueWaitTime, MIN_TRAVEL_TIME) + BUFFER_TIME
   useEffect(() => {
     if (selectedCenter && userLocation && selectedCenter.coordinates) {
       const distance = calculateDistance(
@@ -219,7 +221,8 @@ const BookToken = () => {
       );
       const travelTime = estimateTravelTime(distance);
       const queueWaitTime = selectedCenter.avgWaitTime || 0;
-      const maxAllowedTravelTime = queueWaitTime + BUFFER_TIME;
+      const baseTime = Math.max(queueWaitTime, MIN_TRAVEL_TIME);
+      const maxAllowedTravelTime = baseTime + BUFFER_TIME;
       const canReach = travelTime <= maxAllowedTravelTime;
 
       setDistanceInfo({
@@ -290,10 +293,10 @@ const BookToken = () => {
     }
 
     // Validate location if enabled
-    // Formula: travelTime <= queueWaitTime + 5 min buffer
+    // Formula: travelTime <= max(queueWaitTime, MIN_TRAVEL_TIME) + BUFFER_TIME
     if (enableLocation && distanceInfo && !distanceInfo.canReach) {
       toast.error(
-        `You are too far from the center. Your travel time (${distanceInfo.travelTime} min) exceeds queue wait time (${distanceInfo.queueWaitTime} min) + ${BUFFER_TIME} min buffer.`,
+        `You are too far from the center. Your travel time (${distanceInfo.travelTime} min) exceeds the maximum allowed (${distanceInfo.maxAllowedTravelTime} min).`,
         { duration: 5000, icon: '📍' }
       );
       return;

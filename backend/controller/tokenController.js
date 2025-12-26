@@ -45,8 +45,10 @@ const estimateTravelTime = (distanceKm) => {
 };
 
 /* ===================== CONSTANTS ===================== */
-const BUFFER_TIME_MINUTES = 5; // Extra buffer time for travel (queue wait + 5 min)
+const MIN_TRAVEL_TIME_MINUTES = 15; // Minimum allowed travel time (even when queue is empty)
+const BUFFER_TIME_MINUTES = 5; // Extra buffer time for travel
 const ARRIVAL_WINDOW_MINUTES = 5; // Time to arrive after being called
+// Formula: travelTime <= max(queueWaitTime, MIN_TRAVEL_TIME) + BUFFER_TIME
 
 /* ===================== HELPER: GET OR CREATE SETTINGS ===================== */
 const getSettings = async () => {
@@ -251,15 +253,16 @@ const bookToken = async (req, res, next) => {
             service.avgTime     // fallback avg time from service definition
         );
 
-        // Location validation: Check if user can reach within queue wait time + buffer
-        // Formula: travelTime <= estimatedWaitTime + 5 min buffer
+        // Location validation: Check if user can reach within allowed time
+        // Formula: travelTime <= max(queueWaitTime, MIN_TRAVEL_TIME) + BUFFER_TIME
         if (estimatedTravelTime !== null) {
-            const maxAllowedTravelTime = estimatedWaitTime + BUFFER_TIME_MINUTES;
-            console.log(`Location validation: Travel time ${estimatedTravelTime} min, Queue wait ${estimatedWaitTime} min, Max allowed ${maxAllowedTravelTime} min`);
+            const baseTime = Math.max(estimatedWaitTime, MIN_TRAVEL_TIME_MINUTES);
+            const maxAllowedTravelTime = baseTime + BUFFER_TIME_MINUTES;
+            console.log(`Location validation: Travel time ${estimatedTravelTime} min, Queue wait ${estimatedWaitTime} min, Base time ${baseTime} min, Max allowed ${maxAllowedTravelTime} min`);
 
             if (estimatedTravelTime > maxAllowedTravelTime) {
                 return res.status(400).json({
-                    message: `You are too far from the center. Your travel time (${estimatedTravelTime} min) exceeds the queue wait time (${estimatedWaitTime} min) + ${BUFFER_TIME_MINUTES} min buffer.`,
+                    message: `You are too far from the center. Your travel time (${estimatedTravelTime} min) exceeds the maximum allowed (${maxAllowedTravelTime} min).`,
                     distanceToCenter,
                     estimatedTravelTime,
                     estimatedWaitTime,
