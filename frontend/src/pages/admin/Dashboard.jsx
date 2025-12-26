@@ -62,8 +62,10 @@ const AdminDashboard = () => {
   const {
     tokens,
     queueStats,
+    queueCounts,
     isLoading: tokensLoading,
     fetchTokens,
+    fetchQueueCounts,
     callNextToken,
     completeToken,
     markNoShow,
@@ -82,16 +84,27 @@ const AdminDashboard = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Load local centers data
+  // Fetch queue counts on mount
   useEffect(() => {
-    const loadedCenters = centersData.centers.map(center => ({
-      ...center,
-      queueLength: Math.floor(Math.random() * 30) + 5,
-      avgWaitTime: Math.floor(Math.random() * 50) + 15,
-      isOpen: true,
-    }));
+    fetchQueueCounts();
+  }, [fetchQueueCounts]);
+
+  // Update local centers with real queue counts
+  useEffect(() => {
+    const loadedCenters = centersData.centers.map(center => {
+      // Create key to lookup queue count: "city|centerName"
+      const key = `${center.city}|${center.name}`;
+      const queueData = queueCounts[key] || { count: 0, avgWaitTime: 0 };
+
+      return {
+        ...center,
+        queueLength: queueData.count,
+        avgWaitTime: queueData.avgWaitTime,
+        isOpen: true,
+      };
+    });
     setLocalCenters(loadedCenters);
-  }, []);
+  }, [queueCounts]);
 
   // Fetch data when center is selected
   useEffect(() => {
@@ -238,8 +251,11 @@ const AdminDashboard = () => {
           city: selectedCenter.city,
           serviceCenter: selectedCenter.name
         }),
-        fetchCounters()
+        fetchCounters(),
+        fetchQueueCounts()
       ]);
+    } else {
+      await fetchQueueCounts();
     }
     toast.success('Dashboard refreshed');
   };

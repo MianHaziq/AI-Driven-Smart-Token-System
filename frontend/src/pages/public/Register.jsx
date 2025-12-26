@@ -36,7 +36,10 @@ const Register = () => {
       );
 
       if (result.success) {
-        toast.success('Registration successful! Please login.');
+        toast.success('Account created successfully! Please login.', {
+          icon: '✅',
+          duration: 4000,
+        });
         navigate(ROUTES.LOGIN);
       } else {
         setError(result.message);

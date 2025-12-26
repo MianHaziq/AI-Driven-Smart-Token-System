@@ -1,6 +1,10 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
+
+// Load .env from backend directory
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 // Routes
 const userRouter = require('./routes/user');
@@ -12,8 +16,6 @@ const settingsRouter = require('./routes/settings');
 
 // Middleware
 const { sanitizeBody } = require('./middleware/validators');
-
-require('dotenv').config();
 
 const app = express();
 

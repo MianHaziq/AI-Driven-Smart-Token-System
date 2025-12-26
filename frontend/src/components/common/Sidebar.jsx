@@ -70,6 +70,7 @@ const Sidebar = ({ isOpen, onClose, onLogout }) => {
     { path: ROUTES.MY_TOKENS, label: 'My Tokens', icon: FiList },
     { path: ROUTES.TOKEN_HISTORY, label: 'History', icon: FiClock },
     { path: ROUTES.PROFILE, label: 'Profile', icon: FiUsers },
+    { path: ROUTES.CUSTOMER_SETTINGS, label: 'Settings', icon: FiSettings },
   ];
 
   const isActive = (path) => location.pathname === path;

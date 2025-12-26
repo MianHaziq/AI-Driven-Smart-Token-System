@@ -5,3 +5,4 @@ export { default as MyTokens } from './MyTokens';
 export { default as History } from './History';
 export { default as Profile } from './Profile';
 export { default as TokenDetails } from './TokenDetails';
+export { default as Settings } from './Settings';

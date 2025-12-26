@@ -26,6 +26,7 @@ import {
   History,
   Profile as CustomerProfile,
   TokenDetails,
+  Settings as CustomerSettings,
 } from './pages/customer';
 
 // Admin Pages
@@ -146,6 +147,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['user', 'customer']}>
                 <TokenDetails />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/customer/settings"
+            element={
+              <ProtectedRoute allowedRoles={['user', 'customer']}>
+                <CustomerSettings />
               </ProtectedRoute>
             }
           />

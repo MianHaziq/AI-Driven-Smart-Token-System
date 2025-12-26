@@ -79,19 +79,6 @@
             }
         },
         {
-            "id": "nadra-rawalpindi-sattelite",
-            "name": "NADRA Mega Center Rehmanabad",
-            "serviceCategory": "nadra",
-            "city": "Rawalpindi",
-            "address": "Service Rd S, A Block, Satellite Town, Rawalpindi",
-            "phone": "051-111-786-100",
-            "hours": "24/7",
-            "coordinates": {
-                "lat": 33.6101,
-                "lng": 73.0701
-            }
-        },
-        {
             "id": "passport-islamabad-g10",
             "name": "Regional Passport Office G-10",
             "serviceCategory": "passport",
@@ -167,19 +154,6 @@
             "coordinates": {
                 "lat": 31.4772,
                 "lng": 74.4046
-            }
-        },
-        {
-            "id": "passport-rawalpindi-gunj-mandi",
-            "name": "Regional Passport Office Gunj Mandi",
-            "serviceCategory": "passport",
-            "city": "Rawalpindi",
-            "address": "Railway Workshop Road, Gunj Mandi, Rawalpindi",
-            "phone": "051-111-344-777",
-            "hours": "9:00 AM - 2:00 PM",
-            "coordinates": {
-                "lat": 33.6007,
-                "lng": 73.0679
             }
         },
         {
@@ -378,117 +352,13 @@
             }
         },
         {
-            "id": "indus-hospital-karachi-korangi",
-            "name": "Indus Hospital Korangi",
-            "serviceCategory": "hospitals",
-            "city": "Karachi",
-            "address": "Korangi Crossing, Karachi",
-            "phone": "021-111-111-747",
-            "hours": "24/7",
-            "coordinates": {
-                "lat": 24.8390,
-                "lng": 67.1055
-            }
-        },
-        {
-            "id": "indus-hospital-karachi-pib",
-            "name": "Indus Hospital Fakir Trust Campus",
-            "serviceCategory": "hospitals",
-            "city": "Karachi",
-            "address": "PIB Colony, Karachi",
-            "phone": "021-111-111-747",
-            "hours": "24/7",
-            "coordinates": {
-                "lat": 24.8978,
-                "lng": 67.0635
-            }
-        },
-        {
-            "id": "indus-hospital-lahore",
-            "name": "Indus Hospital QF Campus Lahore",
-            "serviceCategory": "hospitals",
-            "city": "Lahore",
-            "address": "Lahore",
-            "phone": "042-111-111-747",
-            "hours": "24/7",
-            "coordinates": {
-                "lat": 31.5204,
-                "lng": 74.3587
-            }
-        },
-        {
-            "id": "shaukat-khanum-lahore",
-            "name": "Shaukat Khanum Memorial Hospital Lahore",
-            "serviceCategory": "hospitals",
-            "city": "Lahore",
-            "address": "7-A, Block R-3, Johar Town, Lahore",
-            "phone": "042-111-155-555",
-            "hours": "24/7",
-            "coordinates": {
-                "lat": 31.4697,
-                "lng": 74.2728
-            }
-        },
-        {
-            "id": "shaukat-khanum-peshawar",
-            "name": "Shaukat Khanum Memorial Hospital Peshawar",
-            "serviceCategory": "hospitals",
-            "city": "Peshawar",
-            "address": "Phase-5, Hayatabad, Peshawar",
-            "phone": "091-111-155-555",
-            "hours": "24/7",
-            "coordinates": {
-                "lat": 33.9860,
-                "lng": 71.4398
-            }
-        },
-        {
-            "id": "aga-khan-karachi",
-            "name": "Aga Khan University Hospital",
-            "serviceCategory": "hospitals",
-            "city": "Karachi",
-            "address": "Stadium Road, Karachi",
-            "phone": "021-111-911-911",
-            "hours": "24/7",
-            "coordinates": {
-                "lat": 24.8897,
-                "lng": 67.0714
-            }
-        },
-        {
-            "id": "aga-khan-karachi-garden",
-            "name": "Aga Khan Hospital Garden",
-            "serviceCategory": "hospitals",
-            "city": "Karachi",
-            "address": "Garden Area, Karachi",
-            "phone": "021-111-911-911",
-            "hours": "8:00 AM - 10:00 PM",
-            "coordinates": {
-                "lat": 24.8726,
-                "lng": 67.0332
-            }
-        },
-        {
-            "id": "aga-khan-karachi-karimabad",
-            "name": "Aga Khan Hospital Karimabad",
-            "serviceCategory": "hospitals",
-            "city": "Karachi",
-            "address": "Karimabad, Karachi",
-            "phone": "021-111-911-911",
-            "hours": "8:00 AM - 10:00 PM",
-            "coordinates": {
-                "lat": 24.9262,
-                "lng": 67.0351
-            }
-        },
-        {
             "id": "lesco-lahore-hq",
-            "name": "LESCO Headquarters",
-            "serviceCategory": "utilities",
+            "name": "LESCO Headquarters Mozang",
+            "serviceCategory": "electricity",
             "city": "Lahore",
-            "address": "22-A Queens Road, Lahore",
-            "phone": "042-111-000-118",
-            "hours": "9:00 AM - 5:00 PM",
+            "address": "22-A Queens Road, Mozang, Lahore",
+            "phone": "042-99204820",
+            "hours": "8:00 AM - 4:00 PM",
             "coordinates": {
                 "lat": 31.5581,
                 "lng": 74.3217
@@ -497,9 +367,9 @@
         {
             "id": "lesco-lahore-ichra",
             "name": "LESCO Ichra Customer Service Centre",
-            "serviceCategory": "utilities",
+            "serviceCategory": "electricity",
             "city": "Lahore",
-            "address": "Shah Jamal Signal, Ferozpur Road, Lahore",
+            "address": "Shah Jamal Signal, Ferozpur Road, Ichra, Lahore",
             "phone": "042-7532678",
             "hours": "9:00 AM - 5:00 PM",
             "coordinates": {
@@ -510,9 +380,9 @@
         {
             "id": "lesco-lahore-township",
             "name": "LESCO Township Customer Service Centre",
-            "serviceCategory": "utilities",
+            "serviceCategory": "electricity",
             "city": "Lahore",
-            "address": "Township Grid, Chandni Chowk, Lahore",
+            "address": "Chandni Chowk, Township, Lahore",
             "phone": "042-5143090",
             "hours": "9:00 AM - 5:00 PM",
             "coordinates": {
@@ -521,11 +391,24 @@
             }
         },
         {
+            "id": "lesco-lahore-dha",
+            "name": "LESCO DHA Customer Service Centre",
+            "serviceCategory": "electricity",
+            "city": "Lahore",
+            "address": "Ghazi Road, Sector EE, Phase 4, DHA, Lahore",
+            "phone": "042-111-000-118",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 31.4772,
+                "lng": 74.4046
+            }
+        },
+        {
             "id": "iesco-islamabad-hq",
-            "name": "IESCO Head Office",
-            "serviceCategory": "utilities",
+            "name": "IESCO Head Office G-7",
+            "serviceCategory": "electricity",
             "city": "Islamabad",
-            "address": "Street # 40, Sector G7/4, Islamabad",
+            "address": "Street 40, Sector G-7/4, Islamabad",
             "phone": "051-9252937",
             "hours": "9:00 AM - 5:00 PM",
             "coordinates": {
@@ -534,22 +417,35 @@
             }
         },
         {
-            "id": "iesco-islamabad-blue-area",
-            "name": "IESCO Blue Area Office",
-            "serviceCategory": "utilities",
+            "id": "iesco-islamabad-f10",
+            "name": "IESCO F-10 Customer Service Centre",
+            "serviceCategory": "electricity",
             "city": "Islamabad",
-            "address": "Behind Shaheed-e-Millat, China Chowk, Blue Area, Islamabad",
+            "address": "F-10 Markaz, Islamabad",
             "phone": "051-118",
             "hours": "9:00 AM - 5:00 PM",
             "coordinates": {
-                "lat": 33.7073,
-                "lng": 73.0564
+                "lat": 33.6981,
+                "lng": 73.0197
             }
         },
         {
-            "id": "ke-karachi-hq",
-            "name": "K-Electric House",
-            "serviceCategory": "utilities",
+            "id": "iesco-islamabad-i9",
+            "name": "IESCO I-9 Industrial Customer Centre",
+            "serviceCategory": "electricity",
+            "city": "Islamabad",
+            "address": "I-9 Industrial Area, Islamabad",
+            "phone": "051-118",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 33.6569,
+                "lng": 73.0601
+            }
+        },
+        {
+            "id": "ke-karachi-dha",
+            "name": "K-Electric IBC DHA",
+            "serviceCategory": "electricity",
             "city": "Karachi",
             "address": "39-B, Sunset Boulevard, Phase-II, DHA, Karachi",
             "phone": "118",
@@ -560,12 +456,51 @@
             }
         },
         {
+            "id": "ke-karachi-nazimabad",
+            "name": "K-Electric IBC Nazimabad",
+            "serviceCategory": "electricity",
+            "city": "Karachi",
+            "address": "III-E/4, Gole Market Commercial Area, Block 3, Nazimabad, Karachi",
+            "phone": "118",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 24.9262,
+                "lng": 67.0351
+            }
+        },
+        {
+            "id": "ke-karachi-gulshan",
+            "name": "K-Electric IBC Gulshan",
+            "serviceCategory": "electricity",
+            "city": "Karachi",
+            "address": "Block 14, Gulshan-e-Iqbal, Karachi",
+            "phone": "118",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 24.9169,
+                "lng": 67.0867
+            }
+        },
+        {
+            "id": "ke-karachi-saddar",
+            "name": "K-Electric IBC Saddar",
+            "serviceCategory": "electricity",
+            "city": "Karachi",
+            "address": "Elander Road, Opp. Shaheen Complex, Saddar, Karachi",
+            "phone": "118",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 24.8543,
+                "lng": 67.0232
+            }
+        },
+        {
             "id": "sngpl-lahore-hq",
-            "name": "SNGPL Head Office",
-            "serviceCategory": "utilities",
+            "name": "SNGPL Head Office Kashmir Road",
+            "serviceCategory": "sui-gas",
             "city": "Lahore",
-            "address": "21-Kashmir Road, Lahore",
-            "phone": "042-1199",
+            "address": "Gas House, 21-Kashmir Road, Lahore",
+            "phone": "042-99082000",
             "hours": "9:00 AM - 5:00 PM",
             "coordinates": {
                 "lat": 31.5804,
@@ -573,9 +508,35 @@
             }
         },
         {
-            "id": "sngpl-islamabad",
+            "id": "sngpl-lahore-gulberg",
+            "name": "SNGPL Regional Office Gulberg",
+            "serviceCategory": "sui-gas",
+            "city": "Lahore",
+            "address": "24 Gurumangat Road, Gulberg III, Lahore",
+            "phone": "042-99263361",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 31.5087,
+                "lng": 74.3506
+            }
+        },
+        {
+            "id": "sngpl-lahore-johar-town",
+            "name": "SNGPL Customer Service Johar Town",
+            "serviceCategory": "sui-gas",
+            "city": "Lahore",
+            "address": "76-J, Johar Town, Lahore",
+            "phone": "042-1199",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 31.4697,
+                "lng": 74.2728
+            }
+        },
+        {
+            "id": "sngpl-islamabad-hq",
             "name": "SNGPL Islamabad Regional Office",
-            "serviceCategory": "utilities",
+            "serviceCategory": "sui-gas",
             "city": "Islamabad",
             "address": "28-30 Sector I-9, Industrial Area, Islamabad",
             "phone": "051-1199",
@@ -586,24 +547,37 @@
             }
         },
         {
-            "id": "sngpl-rawalpindi",
-            "name": "SNGPL Rawalpindi Regional Office",
-            "serviceCategory": "utilities",
-            "city": "Rawalpindi",
-            "address": "Al-Mansha Plaza, Main G.T Road, Rawalpindi",
+            "id": "sngpl-islamabad-g9",
+            "name": "SNGPL Customer Service G-9",
+            "serviceCategory": "sui-gas",
+            "city": "Islamabad",
+            "address": "G-9 Markaz, Islamabad",
             "phone": "051-1199",
             "hours": "9:00 AM - 5:00 PM",
             "coordinates": {
-                "lat": 33.6007,
-                "lng": 73.0679
+                "lat": 33.7073,
+                "lng": 73.0564
             }
         },
         {
-            "id": "ssgc-karachi-hq",
-            "name": "SSGC House Gulshan",
-            "serviceCategory": "utilities",
+            "id": "sngpl-islamabad-f10",
+            "name": "SNGPL Customer Service F-10",
+            "serviceCategory": "sui-gas",
+            "city": "Islamabad",
+            "address": "F-10 Markaz, Islamabad",
+            "phone": "051-1199",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 33.6981,
+                "lng": 73.0197
+            }
+        },
+        {
+            "id": "ssgc-karachi-gulshan",
+            "name": "SSGC Head Office Gulshan",
+            "serviceCategory": "sui-gas",
             "city": "Karachi",
-            "address": "Block 14, Sir Shah Suleman Road, Gulshan-e-Iqbal, Karachi",
+            "address": "ST-4/B, Block 14, Sir Shah Suleman Road, Gulshan-e-Iqbal, Karachi",
             "phone": "021-1199",
             "hours": "9:00 AM - 5:00 PM",
             "coordinates": {
@@ -612,16 +586,29 @@
             }
         },
         {
-            "id": "ssgc-karachi-defence",
-            "name": "SSGC Defence CFC",
-            "serviceCategory": "utilities",
+            "id": "ssgc-karachi-dha",
+            "name": "SSGC Customer Facilitation Centre DHA",
+            "serviceCategory": "sui-gas",
             "city": "Karachi",
-            "address": "Defence, Karachi",
+            "address": "Phase 4, DHA, Karachi",
             "phone": "021-1199",
             "hours": "9:00 AM - 5:00 PM",
             "coordinates": {
                 "lat": 24.8248,
                 "lng": 67.0657
+            }
+        },
+        {
+            "id": "ssgc-karachi-saddar",
+            "name": "SSGC Customer Facilitation Centre Saddar",
+            "serviceCategory": "sui-gas",
+            "city": "Karachi",
+            "address": "Near Metropole Hotel, Abdullah Haroon Road, Saddar, Karachi",
+            "phone": "021-1199",
+            "hours": "9:00 AM - 5:00 PM",
+            "coordinates": {
+                "lat": 24.8543,
+                "lng": 67.0232
             }
         },
         {
@@ -635,6 +622,19 @@
             "coordinates": {
                 "lat": 33.6534,
                 "lng": 73.0521
+            }
+        },
+        {
+            "id": "excise-islamabad-g11",
+            "name": "Excise & Taxation Office G-11",
+            "serviceCategory": "excise",
+            "city": "Islamabad",
+            "address": "G-11 Markaz, Islamabad",
+            "phone": "051-9255987",
+            "hours": "9:00 AM - 2:00 PM",
+            "coordinates": {
+                "lat": 33.6700,
+                "lng": 73.0300
             }
         },
         {
@@ -677,16 +677,16 @@
             }
         },
         {
-            "id": "excise-lahore-farid-court",
-            "name": "Excise & Taxation Office Farid Court",
+            "id": "excise-lahore-dha",
+            "name": "Excise & Taxation Office DHA",
             "serviceCategory": "excise",
             "city": "Lahore",
-            "address": "2-A Farid Court Road, Lahore",
+            "address": "DHA Phase 5, Lahore",
             "phone": "042-99202775",
             "hours": "9:00 AM - 2:00 PM",
             "coordinates": {
-                "lat": 31.5437,
-                "lng": 74.3212
+                "lat": 31.4772,
+                "lng": 74.4046
             }
         }
     ]

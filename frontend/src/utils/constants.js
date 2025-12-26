@@ -114,23 +114,11 @@ export const DAYS_OF_WEEK = [
   'Saturday',
 ];
 
-// Pakistani Cities
+// Pakistani Cities (Supported)
 export const PAKISTANI_CITIES = [
-  'Karachi',
   'Lahore',
   'Islamabad',
-  'Rawalpindi',
-  'Faisalabad',
-  'Multan',
-  'Peshawar',
-  'Quetta',
-  'Sialkot',
-  'Gujranwala',
-  'Hyderabad',
-  'Abbottabad',
-  'Bahawalpur',
-  'Sargodha',
-  'Sukkur',
+  'Karachi',
 ];
 
 // Pakistani Provinces
@@ -280,7 +268,8 @@ export const ROUTES = {
 
   // Legacy routes (for backwards compatibility)
   PROFILE: '/customer/profile',
-  SETTINGS: '/customer/profile',
+  SETTINGS: '/customer/settings',
+  CUSTOMER_SETTINGS: '/customer/settings',
 
   // Admin routes (protected, with AdminLayout)
   ADMIN_DASHBOARD: '/admin/dashboard',

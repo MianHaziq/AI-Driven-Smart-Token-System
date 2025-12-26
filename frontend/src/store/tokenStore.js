@@ -8,6 +8,7 @@ const useTokenStore = create((set, get) => ({
   currentToken: null,
   queueStats: null,
   dashboardStats: null,
+  queueCounts: {},
   isLoading: false,
   error: null,
 
@@ -98,6 +99,17 @@ const useTokenStore = create((set, get) => ({
     try {
       const response = await api.get('/token/stats');
       set({ dashboardStats: response.data });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message };
+    }
+  },
+
+  // Get queue counts by center
+  fetchQueueCounts: async () => {
+    try {
+      const response = await api.get('/token/queue-counts');
+      set({ queueCounts: response.data.queueCounts || {} });
       return { success: true, data: response.data };
     } catch (error) {
       return { success: false, message: error.response?.data?.message };

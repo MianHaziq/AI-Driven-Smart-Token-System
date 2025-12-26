@@ -14,12 +14,14 @@ const {
     getTokenByNumber,
     getDashboardStats,
     getAnalytics,
+    getQueueCountsByCenter,
     cancelToken
 } = require("../controller/tokenController");
 
 // Public routes
 router.get("/queue", getQueueStatus);
 router.get("/stats", getDashboardStats);
+router.get("/queue-counts", getQueueCountsByCenter);
 router.get("/number/:tokenNumber", getTokenByNumber);
 
 // Admin routes for analytics

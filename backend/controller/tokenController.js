@@ -3,6 +3,7 @@ const Token = require("../models/token");
 const Service = require("../models/service");
 const Counter = require("../models/counter");
 const Settings = require("../models/settings");
+const TokenCounter = require("../models/tokenCounter");
 
 /* ===================== HELPER: CHECK IF VALID OBJECTID ===================== */
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id) && String(new mongoose.Types.ObjectId(id)) === id;
@@ -17,12 +18,97 @@ const getSettings = async () => {
     return settings;
 };
 
-/* ===================== HELPER: GENERATE TOKEN NUMBER (ATOMIC) ===================== */
-const generateTokenNumber = async () => {
+/* ===================== HELPER: CALCULATE ESTIMATED WAIT TIME ===================== */
+/**
+ * Calculates estimated wait time for a new customer joining the queue.
+ *
+ * FORMULA: ceil(TokensAhead / ActiveCounters) × AvgServiceTime
+ *
+ * This formula distributes waiting customers across available counters:
+ * - If 5 people are waiting and 2 counters are active
+ * - Each counter will serve ~3 people (ceil(5/2) = 3)
+ * - If avg service time is 10 min, wait = 3 × 10 = 30 min
+ *
+ * FALLBACK VALUES:
+ * - If no active counters: assumes 1 counter (worst case)
+ * - If no completed tokens today: uses service.avgTime from database
+ *
+ * @param {number} tokensAhead - Number of tokens waiting before this customer
+ * @param {string} city - City of the service center (optional)
+ * @param {string} serviceCenter - Name of the service center (optional)
+ * @param {number} defaultAvgTime - Default service time from service definition
+ * @returns {Promise<number>} Estimated wait time in minutes
+ */
+const calculateEstimatedWaitTime = async (tokensAhead, city, serviceCenter, defaultAvgTime) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // First, get or create settings document
+    // Step 1: Get number of active counters (status = 'serving' or 'available')
+    // Active counters are those that can serve customers
+    const activeCounters = await Counter.countDocuments({
+        status: { $in: ['serving', 'available'] }
+    });
+
+    // Step 2: Get real average service time from today's completed tokens
+    // This gives us actual performance data instead of static estimates
+    const completedTokensToday = await Token.find({
+        tokenDate: today,
+        status: 'completed',
+        actualWaitTime: { $gt: 0 } // Only tokens with recorded service time
+    });
+
+    let avgServiceTime = defaultAvgTime; // Fallback to service definition
+
+    if (completedTokensToday.length > 0) {
+        // Calculate average from real completed tokens
+        const totalServiceTime = completedTokensToday.reduce(
+            (sum, token) => sum + (token.actualWaitTime || 0), 0
+        );
+        avgServiceTime = Math.round(totalServiceTime / completedTokensToday.length);
+    }
+
+    // Step 3: Calculate estimated wait time
+    // Use at least 1 counter to avoid division by zero
+    const countersToUse = Math.max(activeCounters, 1);
+
+    // ceil(TokensAhead / Counters) gives us how many "rounds" of service
+    // before this customer gets served
+    const roundsToWait = Math.ceil(tokensAhead / countersToUse);
+
+    // Total wait = rounds × average time per service
+    const estimatedWaitTime = roundsToWait * avgServiceTime;
+
+    console.log(`Wait time calculation: ${tokensAhead} ahead / ${countersToUse} counters = ${roundsToWait} rounds × ${avgServiceTime} min = ${estimatedWaitTime} min`);
+
+    return estimatedWaitTime;
+};
+
+/* ===================== HELPER: GENERATE TOKEN NUMBER (BRANCH-SPECIFIC) ===================== */
+/**
+ * Generates token number based on service category and branch
+ * Format: {CategoryPrefix}{BranchCode}{Number}
+ * Example: NA001 (NADRA, Branch A, Token 1), PB005 (Passport, Branch B, Token 5)
+ *
+ * Category Prefixes:
+ * - NADRA: N
+ * - Passport: P
+ * - Excise: E
+ * - Electricity: L
+ * - Sui Gas: G
+ * - Banks: B
+ *
+ * Branch Codes: A, B, C... assigned per city+serviceCenter combination
+ */
+const generateTokenNumber = async (category, city, serviceCenter) => {
+    // Use TokenCounter model for branch-specific token generation
+    if (category && city && serviceCenter) {
+        return await TokenCounter.getNextTokenNumber(category, city, serviceCenter);
+    }
+
+    // Fallback to old method if category/city/center not provided
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     let settings = await Settings.findOne();
 
     if (!settings) {
@@ -32,23 +118,20 @@ const generateTokenNumber = async () => {
         });
         await settings.save();
     } else {
-        // Check if we need to reset for new day
         const lastDate = settings.lastTokenDate;
         const isNewDay = !lastDate || lastDate.getTime() < today.getTime();
 
         if (isNewDay) {
-            // Reset counter for new day
             settings.dailyTokenCounter = 1;
             settings.lastTokenDate = today;
         } else {
-            // Increment counter
             settings.dailyTokenCounter += 1;
         }
         await settings.save();
     }
 
     const tokenNum = settings.dailyTokenCounter.toString().padStart(3, '0');
-    return `${settings.tokenPrefix || 'A'}-${tokenNum}`;
+    return `${settings.tokenPrefix || 'A'}${tokenNum}`;
 };
 
 /* ===================== BOOK TOKEN ===================== */
@@ -86,18 +169,29 @@ const bookToken = async (req, res, next) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // Get current waiting tokens for today
+        // Get current waiting tokens for today at this specific branch
         const waitingTokens = await Token.countDocuments({
             status: "waiting",
-            tokenDate: today
+            tokenDate: today,
+            city: city || null,
+            serviceCenter: serviceCenter || null
         });
 
         console.log('Generating token number...');
-        const tokenNumber = await generateTokenNumber();
+        // Generate token number based on service category, city, and branch
+        const tokenNumber = await generateTokenNumber(service.category, city, serviceCenter);
         console.log('Generated token number:', tokenNumber);
 
         const position = waitingTokens + 1;
-        const estimatedWaitTime = position * service.avgTime;
+
+        // Calculate estimated wait time using improved formula
+        // Formula: ceil(TokensAhead / ActiveCounters) × AvgServiceTime
+        const estimatedWaitTime = await calculateEstimatedWaitTime(
+            waitingTokens,      // tokens ahead in queue
+            city,               // city for center-specific calculation
+            serviceCenter,      // service center name
+            service.avgTime     // fallback avg time from service definition
+        );
 
         const newToken = new Token({
             tokenNumber,
@@ -655,8 +749,7 @@ const getAnalytics = async (req, res, next) => {
                 avgWait: serviceCompleted.length > 0
                     ? Math.round(serviceCompleted.reduce((s, t) => s + (t.actualWaitTime || 0), 0) / serviceCompleted.length)
                     : 0,
-                avgService: 15,
-                satisfaction: Math.round((4.2 + Math.random() * 0.6) * 10) / 10
+                avgService: 15
             };
         }).slice(0, 5);
 
@@ -678,6 +771,10 @@ const getAnalytics = async (req, res, next) => {
             ? Math.round((noShows.length / tokens.length) * 100 * 10) / 10
             : 0;
 
+        const completionRate = tokens.length > 0
+            ? Math.round((completed.length / tokens.length) * 100 * 10) / 10
+            : 0;
+
         res.json({
             stats: {
                 totalTokens: tokens.length,
@@ -687,7 +784,7 @@ const getAnalytics = async (req, res, next) => {
                 peakHour: peakHour.hour,
                 noShowRate,
                 noShowChange: 0,
-                satisfaction: 4.4
+                completionRate
             },
             hourlyData,
             weeklyData,
@@ -695,6 +792,91 @@ const getAnalytics = async (req, res, next) => {
             waitTimeDistribution,
             servicePerformance,
             peakHourInsight: { hour: peakHour.hour, tokens: peakHour.tokens }
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+/* ===================== GET QUEUE COUNTS BY CENTER ===================== */
+/**
+ * Returns queue counts and estimated wait times for all centers.
+ *
+ * Uses the improved formula for wait time:
+ * Wait = ceil(QueueCount / ActiveCounters) × AvgServiceTime
+ *
+ * This provides accurate wait time estimates for display on the admin dashboard.
+ */
+const getQueueCountsByCenter = async (req, res, next) => {
+    try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Get all waiting tokens for today grouped by city and serviceCenter
+        const queueCounts = await Token.aggregate([
+            {
+                $match: {
+                    tokenDate: today,
+                    status: "waiting"
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        city: "$city",
+                        serviceCenter: "$serviceCenter"
+                    },
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        // Get active counters count for the formula
+        const activeCounters = await Counter.countDocuments({
+            status: { $in: ['serving', 'available'] }
+        });
+        const countersToUse = Math.max(activeCounters, 1);
+
+        // Get average service time from today's completed tokens
+        const completedTokensToday = await Token.find({
+            tokenDate: today,
+            status: 'completed',
+            actualWaitTime: { $gt: 0 }
+        });
+
+        let avgServiceTime = 15; // Default fallback (15 minutes)
+        if (completedTokensToday.length > 0) {
+            const totalServiceTime = completedTokensToday.reduce(
+                (sum, token) => sum + (token.actualWaitTime || 0), 0
+            );
+            avgServiceTime = Math.round(totalServiceTime / completedTokensToday.length);
+        }
+
+        // Convert to a map for easy lookup with calculated wait times
+        const countsMap = {};
+        queueCounts.forEach(item => {
+            if (item._id.city && item._id.serviceCenter) {
+                const key = `${item._id.city}|${item._id.serviceCenter}`;
+                const queueCount = item.count;
+
+                // Calculate wait time using improved formula:
+                // Wait = ceil(QueueCount / ActiveCounters) × AvgServiceTime
+                const roundsToWait = Math.ceil(queueCount / countersToUse);
+                const estimatedWaitTime = roundsToWait * avgServiceTime;
+
+                countsMap[key] = {
+                    count: queueCount,
+                    avgWaitTime: estimatedWaitTime
+                };
+            }
+        });
+
+        res.json({
+            queueCounts: countsMap,
+            activeCounters: countersToUse,
+            avgServiceTime,
+            timestamp: new Date()
         });
 
     } catch (error) {
@@ -752,5 +934,6 @@ module.exports = {
     getTokenByNumber,
     getDashboardStats,
     getAnalytics,
+    getQueueCountsByCenter,
     cancelToken
 };

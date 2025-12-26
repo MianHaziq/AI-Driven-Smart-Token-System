@@ -11,35 +11,14 @@ const counters = [
     {
         name: "Counter 1",
         status: "available",
-        services: ["nadra", "passport"],
+        services: ["nadra", "passport", "excise", "banks", "utilities"],
         tokensServed: 0,
         avgServiceTime: 0
     },
     {
         name: "Counter 2",
         status: "available",
-        services: ["nadra", "passport", "excise"],
-        tokensServed: 0,
-        avgServiceTime: 0
-    },
-    {
-        name: "Counter 3",
-        status: "available",
-        services: ["banks", "utilities"],
-        tokensServed: 0,
-        avgServiceTime: 0
-    },
-    {
-        name: "Counter 4",
-        status: "available",
-        services: ["nadra", "banks"],
-        tokensServed: 0,
-        avgServiceTime: 0
-    },
-    {
-        name: "Counter 5",
-        status: "offline",
-        services: ["passport", "excise"],
+        services: ["nadra", "passport", "excise", "banks", "utilities"],
         tokensServed: 0,
         avgServiceTime: 0
     },

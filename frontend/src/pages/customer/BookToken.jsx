@@ -28,6 +28,7 @@ import centersData from '../../data/centers.json';
 import useAuthStore from '../../store/authStore';
 import useTokenStore from '../../store/tokenStore';
 import toast from 'react-hot-toast';
+import api from '../../utils/api';
 
 // Cities for selection
 const CITIES = [
@@ -66,17 +67,44 @@ const BookToken = () => {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [enableLocation, setEnableLocation] = useState(true);
 
-  // Load centers and add dynamic data
+  // Load centers and fetch real queue counts from API
   useEffect(() => {
-    const loadedCenters = centersData.centers.map(center => ({
-      ...center,
-      queueLength: Math.floor(Math.random() * 30) + 5,
-      avgWaitTime: Math.floor(Math.random() * 50) + 15,
-      distance: (Math.random() * 10 + 1).toFixed(1),
-      isOpen: true,
-      rating: (Math.random() * 1 + 4).toFixed(1),
-    }));
-    setCenters(loadedCenters);
+    const fetchQueueCounts = async () => {
+      try {
+        const response = await api.get('/token/queue-counts');
+        const queueCounts = response.data.queueCounts || {};
+
+        const loadedCenters = centersData.centers.map(center => {
+          // Create key to lookup queue count: "city|centerName"
+          const key = `${center.city}|${center.name}`;
+          const queueData = queueCounts[key] || { count: 0, avgWaitTime: 0 };
+
+          return {
+            ...center,
+            queueLength: queueData.count,
+            avgWaitTime: queueData.avgWaitTime,
+            distance: (Math.random() * 10 + 1).toFixed(1), // Keep random distance for now
+            isOpen: true,
+            rating: (Math.random() * 1 + 4).toFixed(1), // Keep random rating for now
+          };
+        });
+        setCenters(loadedCenters);
+      } catch (error) {
+        console.error('Failed to fetch queue counts:', error);
+        // Fallback to centers with 0 queue
+        const loadedCenters = centersData.centers.map(center => ({
+          ...center,
+          queueLength: 0,
+          avgWaitTime: 0,
+          distance: (Math.random() * 10 + 1).toFixed(1),
+          isOpen: true,
+          rating: (Math.random() * 1 + 4).toFixed(1),
+        }));
+        setCenters(loadedCenters);
+      }
+    };
+
+    fetchQueueCounts();
   }, []);
 
   // Handle pre-selected service from navigation
@@ -218,7 +246,10 @@ const BookToken = () => {
 
         setBookedToken(bookedTokenData);
         setStep(6);
-        toast.success('Token booked successfully!');
+        toast.success(`Token ${bookedTokenData.tokenNumber} booked successfully!`, {
+          icon: '🎫',
+          duration: 4000,
+        });
       } else {
         toast.error(result.message || 'Booking failed. Please try again.');
       }

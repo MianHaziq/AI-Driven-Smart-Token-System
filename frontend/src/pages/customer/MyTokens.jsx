@@ -46,9 +46,12 @@ const MyTokens = () => {
   const handleCancelToken = async (tokenId) => {
     const result = await cancelToken(tokenId);
     if (result.success) {
-      toast.success('Token cancelled successfully');
+      toast.success('Token cancelled successfully', {
+        icon: '❌',
+        duration: 3000,
+      });
     } else {
-      toast.error(result.message);
+      toast.error(result.message || 'Failed to cancel token');
     }
   };
 

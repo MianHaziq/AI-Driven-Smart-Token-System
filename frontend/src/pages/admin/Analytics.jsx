@@ -123,8 +123,8 @@ const Analytics = () => {
           color="amber"
         />
         <StatCard
-          title="Satisfaction"
-          value={`${stats.satisfaction || 0}/5`}
+          title="Completion Rate"
+          value={`${stats.completionRate || 0}%`}
           icon={FiCheckCircle}
           color="emerald"
         />
@@ -311,7 +311,6 @@ const Analytics = () => {
                 <th className="text-center py-3 px-4 font-semibold text-gray-600">Tokens</th>
                 <th className="text-center py-3 px-4 font-semibold text-gray-600">Avg Wait</th>
                 <th className="text-center py-3 px-4 font-semibold text-gray-600">Avg Service</th>
-                <th className="text-center py-3 px-4 font-semibold text-gray-600">Satisfaction</th>
               </tr>
             </thead>
             <tbody>
@@ -338,17 +337,11 @@ const Analytics = () => {
                     <td className="py-4 px-4 text-center">
                       <span className="text-gray-700">{service.avgService} min</span>
                     </td>
-                    <td className="py-4 px-4 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <span className="text-amber-500">★</span>
-                        <span className="font-medium text-gray-900">{service.satisfaction}</span>
-                      </div>
-                    </td>
                   </motion.tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="py-8 text-center text-gray-500">
+                  <td colSpan="4" className="py-8 text-center text-gray-500">
                     No service data available
                   </td>
                 </tr>
