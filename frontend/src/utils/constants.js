@@ -265,19 +265,24 @@ export const ROUTES = {
   RESET_PASSWORD: '/reset-password',
   ABOUT: '/about',
   CONTACT: '/contact',
-
-  // Customer
-  CUSTOMER_DASHBOARD: '/customer/dashboard',
   SERVICES: '/services',
+
+  // Public token routes (for quick access without full layout)
   BOOK_TOKEN: '/book-token',
-  MY_TOKENS: '/my-tokens',
-  TOKEN_HISTORY: '/history',
+
+  // Customer routes (protected, with CustomerLayout)
+  CUSTOMER_DASHBOARD: '/customer/dashboard',
+  MY_TOKENS: '/customer/my-tokens',
+  TOKEN_HISTORY: '/customer/history',
+  CUSTOMER_PROFILE: '/customer/profile',
   TOKEN_DETAILS: '/token/:id',
   LIVE_TRACKING: '/track/:id',
-  PROFILE: '/profile',
-  SETTINGS: '/settings',
 
-  // Admin
+  // Legacy routes (for backwards compatibility)
+  PROFILE: '/customer/profile',
+  SETTINGS: '/customer/profile',
+
+  // Admin routes (protected, with AdminLayout)
   ADMIN_DASHBOARD: '/admin/dashboard',
   MANAGE_QUEUE: '/admin/queue',
   MANAGE_SERVICES: '/admin/services',

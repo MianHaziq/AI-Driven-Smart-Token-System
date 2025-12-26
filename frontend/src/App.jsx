@@ -6,7 +6,6 @@ import useAuthStore from './store/authStore';
 // Layouts
 import PublicLayout from './layouts/PublicLayout';
 import AuthLayout from './layouts/AuthLayout';
-import CustomerLayout from './layouts/CustomerLayout';
 import AdminLayout from './layouts/AdminLayout';
 
 // Public Pages
@@ -22,7 +21,6 @@ import {
 
 // Customer Pages
 import {
-  Dashboard as CustomerDashboard,
   BookToken,
   MyTokens,
   History,
@@ -63,10 +61,11 @@ const PublicRoute = ({ children, restricted = false }) => {
 
   if (isAuthenticated && restricted) {
     // Redirect based on role
-    if (user?.role === 'admin') {
+    if (user?.role === 'admin' || user?.role === 'superadmin') {
       return <Navigate to="/admin/dashboard" replace />;
     }
-    return <Navigate to="/customer/dashboard" replace />;
+    // Customers go to home page
+    return <Navigate to="/" replace />;
   }
 
   return children;
@@ -116,9 +115,40 @@ function App() {
           <Route path="/services" element={<Services />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/book-token" element={<BookToken />} />
-          <Route path="/my-tokens" element={<MyTokens />} />
-          <Route path="/history" element={<History />} />
-          <Route path="/profile" element={<CustomerProfile />} />
+
+          {/* Customer Routes - Same layout as public pages */}
+          <Route
+            path="/customer/my-tokens"
+            element={
+              <ProtectedRoute allowedRoles={['user', 'customer']}>
+                <MyTokens />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/customer/history"
+            element={
+              <ProtectedRoute allowedRoles={['user', 'customer']}>
+                <History />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/customer/profile"
+            element={
+              <ProtectedRoute allowedRoles={['user', 'customer']}>
+                <CustomerProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/token/:id"
+            element={
+              <ProtectedRoute allowedRoles={['user', 'customer']}>
+                <TokenDetails />
+              </ProtectedRoute>
+            }
+          />
         </Route>
 
         {/* Auth Routes with AuthLayout */}
@@ -149,20 +179,8 @@ function App() {
           />
         </Route>
 
-        {/* Customer Routes with CustomerLayout */}
-        <Route
-          element={
-            <ProtectedRoute allowedRoles={['customer']}>
-              <CustomerLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route path="/customer/dashboard" element={<CustomerDashboard />} />
-          <Route path="/customer/my-tokens" element={<MyTokens />} />
-          <Route path="/customer/history" element={<History />} />
-          <Route path="/customer/profile" element={<CustomerProfile />} />
-          <Route path="/token/:id" element={<TokenDetails />} />
-        </Route>
+        {/* Redirect old customer dashboard to home */}
+        <Route path="/customer/dashboard" element={<Navigate to="/" replace />} />
 
         {/* Admin Routes with AdminLayout */}
         <Route

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   FiSettings,
@@ -9,15 +10,36 @@ import {
   FiMapPin,
   FiVolume2,
   FiSun,
+  FiUser,
+  FiLock,
+  FiTrash2,
+  FiAlertTriangle,
 } from 'react-icons/fi';
-import { Card, Button, Input, Select, Loader } from '../../components/common';
+import { Card, Button, Input, Select, Loader, Modal } from '../../components/common';
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
+import useAuthStore from '../../store/authStore';
 
 const Settings = () => {
+  const navigate = useNavigate();
+  const { changePassword, deleteAccount, user } = useAuthStore();
+
   const [activeTab, setActiveTab] = useState('general');
   const [isSaving, setIsSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Password change state
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  // Delete account state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Settings state
   const [settings, setSettings] = useState({
@@ -74,7 +96,62 @@ const Settings = () => {
     { id: 'notifications', label: 'Notifications', icon: FiBell },
     { id: 'hours', label: 'Operating Hours', icon: FiClock },
     { id: 'display', label: 'Display', icon: FiSun },
+    { id: 'account', label: 'Account', icon: FiUser },
   ];
+
+  // Handle password change
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast.error('New password must be at least 6 characters');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const result = await changePassword(passwordData.currentPassword, passwordData.newPassword);
+      if (result.success) {
+        toast.success(result.message || 'Password changed successfully');
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      } else {
+        toast.error(result.message || 'Failed to change password');
+      }
+    } catch (error) {
+      toast.error('Failed to change password');
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  // Handle account deletion
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      toast.error('Please enter your password');
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const result = await deleteAccount(deletePassword);
+      if (result.success) {
+        toast.success(result.message || 'Account deleted successfully');
+        setShowDeleteModal(false);
+        navigate('/login');
+      } else {
+        toast.error(result.message || 'Failed to delete account');
+      }
+    } catch (error) {
+      toast.error('Failed to delete account');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const timezones = [
     { value: 'Asia/Karachi', label: 'Pakistan (PKT)' },
@@ -503,9 +580,140 @@ const Settings = () => {
                 </div>
               </Card>
             )}
+
+            {/* Account Settings */}
+            {activeTab === 'account' && (
+              <div className="space-y-6">
+                {/* Change Password */}
+                <Card className="border-0 shadow-lg">
+                  <Card.Header>
+                    <Card.Title subtitle="Update your password to keep your account secure">
+                      <span className="flex items-center gap-2">
+                        <FiLock className="w-5 h-5 text-pakistan-green" />
+                        Change Password
+                      </span>
+                    </Card.Title>
+                  </Card.Header>
+
+                  <form onSubmit={handlePasswordChange} className="space-y-4">
+                    <Input
+                      label="Current Password"
+                      type="password"
+                      value={passwordData.currentPassword}
+                      onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                      placeholder="Enter current password"
+                      required
+                    />
+                    <Input
+                      label="New Password"
+                      type="password"
+                      value={passwordData.newPassword}
+                      onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                      placeholder="Enter new password (min 6 characters)"
+                      required
+                    />
+                    <Input
+                      label="Confirm New Password"
+                      type="password"
+                      value={passwordData.confirmPassword}
+                      onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                      placeholder="Confirm new password"
+                      required
+                    />
+                    <Button
+                      type="submit"
+                      loading={isChangingPassword}
+                      icon={FiLock}
+                    >
+                      Change Password
+                    </Button>
+                  </form>
+                </Card>
+
+                {/* Delete Account */}
+                <Card className="border-0 shadow-lg border-red-200">
+                  <Card.Header>
+                    <Card.Title subtitle="Permanently delete your account and all associated data">
+                      <span className="flex items-center gap-2 text-red-600">
+                        <FiTrash2 className="w-5 h-5" />
+                        Delete Account
+                      </span>
+                    </Card.Title>
+                  </Card.Header>
+
+                  <div className="space-y-4">
+                    <div className="p-4 bg-red-50 rounded-xl border border-red-200">
+                      <div className="flex items-start gap-3">
+                        <FiAlertTriangle className="w-5 h-5 text-red-600 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-red-800">Warning: This action is irreversible</p>
+                          <p className="text-sm text-red-600 mt-1">
+                            Once you delete your account, all your data will be permanently removed.
+                            This includes your profile, tokens history, and any other associated information.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      variant="danger"
+                      icon={FiTrash2}
+                      onClick={() => setShowDeleteModal(true)}
+                    >
+                      Delete My Account
+                    </Button>
+                  </div>
+                </Card>
+              </div>
+            )}
           </motion.div>
         </div>
       </div>
+
+      {/* Delete Account Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setDeletePassword('');
+        }}
+        title="Delete Account"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div className="p-4 bg-red-50 rounded-xl">
+            <p className="text-sm text-red-600">
+              This will permanently delete your account. Enter your password to confirm.
+            </p>
+          </div>
+          <Input
+            label="Enter your password"
+            type="password"
+            value={deletePassword}
+            onChange={(e) => setDeletePassword(e.target.value)}
+            placeholder="Your password"
+          />
+          <div className="flex gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowDeleteModal(false);
+                setDeletePassword('');
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleDeleteAccount}
+              loading={isDeleting}
+              className="flex-1"
+            >
+              Delete Account
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

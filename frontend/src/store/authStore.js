@@ -122,6 +122,100 @@ const useAuthStore = create((set) => ({
 
     // Clear error
     clearError: () => set({ error: null }),
+
+    // Update profile
+    updateProfile: async (profileData) => {
+        set({ isLoading: true, error: null });
+        try {
+            const response = await api.put('/auth/profile', profileData);
+            const { user: updatedUser, message } = response.data;
+
+            // Update local storage and state
+            const currentUserData = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_DATA) || '{}');
+            const newUserData = { ...currentUserData, ...updatedUser };
+            localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(newUserData));
+
+            set({
+                user: newUserData,
+                isLoading: false,
+                error: null,
+            });
+
+            return { success: true, message };
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || 'Failed to update profile';
+            set({ error: errorMessage, isLoading: false });
+            return { success: false, message: errorMessage };
+        }
+    },
+
+    // Get profile
+    getProfile: async () => {
+        set({ isLoading: true, error: null });
+        try {
+            const response = await api.get('/auth/profile');
+            const { user: profileData } = response.data;
+
+            // Update local storage and state
+            const currentUserData = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_DATA) || '{}');
+            const newUserData = { ...currentUserData, ...profileData };
+            localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(newUserData));
+
+            set({
+                user: newUserData,
+                isLoading: false,
+                error: null,
+            });
+
+            return { success: true, user: profileData };
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || 'Failed to fetch profile';
+            set({ error: errorMessage, isLoading: false });
+            return { success: false, message: errorMessage };
+        }
+    },
+
+    // Change password
+    changePassword: async (currentPassword, newPassword) => {
+        set({ isLoading: true, error: null });
+        try {
+            const response = await api.put('/auth/change-password', { currentPassword, newPassword });
+            const { message } = response.data;
+
+            set({ isLoading: false, error: null });
+            return { success: true, message };
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || 'Failed to change password';
+            set({ error: errorMessage, isLoading: false });
+            return { success: false, message: errorMessage };
+        }
+    },
+
+    // Delete account
+    deleteAccount: async (password) => {
+        set({ isLoading: true, error: null });
+        try {
+            const response = await api.delete('/auth/delete-account', { data: { password } });
+            const { message } = response.data;
+
+            // Clear local storage and state
+            localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+            localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+
+            set({
+                user: null,
+                isAuthenticated: false,
+                isLoading: false,
+                error: null,
+            });
+
+            return { success: true, message };
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || 'Failed to delete account';
+            set({ error: errorMessage, isLoading: false });
+            return { success: false, message: errorMessage };
+        }
+    },
 }));
 
 export default useAuthStore;

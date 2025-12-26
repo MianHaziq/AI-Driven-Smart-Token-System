@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const authorization = require("../middleware/authorization");
+const isAdmin = require("../middleware/isAdmin");
+const { validateTokenBooking, validateObjectId } = require("../middleware/validators");
 const {
     bookToken,
     getQueueStatus,
@@ -11,6 +13,7 @@ const {
     getMyTokens,
     getTokenByNumber,
     getDashboardStats,
+    getAnalytics,
     cancelToken
 } = require("../controller/tokenController");
 
@@ -19,15 +22,18 @@ router.get("/queue", getQueueStatus);
 router.get("/stats", getDashboardStats);
 router.get("/number/:tokenNumber", getTokenByNumber);
 
-// Protected routes (require authentication)
-router.post("/book", authorization, bookToken);
-router.get("/my-tokens", authorization, getMyTokens);
-router.get("/:id", authorization, getTokenById);
-router.patch("/cancel/:tokenId", authorization, cancelToken);
+// Admin routes for analytics
+router.get("/analytics", authorization, isAdmin, getAnalytics);
 
-// Admin routes
-router.post("/call-next", authorization, callNextToken);
-router.patch("/complete/:tokenId", authorization, completeToken);
-router.patch("/no-show/:tokenId", authorization, markNoShow);
+// Protected routes (require authentication)
+router.post("/book", authorization, validateTokenBooking, bookToken);
+router.get("/my-tokens", authorization, getMyTokens);
+router.get("/:id", authorization, validateObjectId('id'), getTokenById);
+router.patch("/cancel/:tokenId", authorization, validateObjectId('tokenId'), cancelToken);
+
+// Admin routes (require admin role)
+router.post("/call-next", authorization, isAdmin, callNextToken);
+router.patch("/complete/:tokenId", authorization, isAdmin, validateObjectId('tokenId'), completeToken);
+router.patch("/no-show/:tokenId", authorization, isAdmin, validateObjectId('tokenId'), markNoShow);
 
 module.exports = router;

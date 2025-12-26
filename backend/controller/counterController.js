@@ -58,7 +58,17 @@ const readCounters = async (req, res, next) => {
                 }
             })
             .sort({ createdAt: 1 });
-        res.json(counters);
+
+        // Format response with customerName for easier frontend access
+        const formattedCounters = counters.map(counter => {
+            const counterObj = counter.toObject();
+            if (counterObj.currentToken && counterObj.currentToken.customer) {
+                counterObj.currentToken.customerName = counterObj.currentToken.customer.fullName || 'Customer';
+            }
+            return counterObj;
+        });
+
+        res.json(formattedCounters);
     } catch (error) {
         next(error);
     }

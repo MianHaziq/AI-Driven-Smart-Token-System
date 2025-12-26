@@ -1,5 +1,7 @@
 const express = require("express");
 const router = express.Router();
+const authorization = require("../middleware/authorization");
+const isAdmin = require("../middleware/isAdmin");
 const {
     createService,
     readServices,
@@ -10,13 +12,15 @@ const {
     getServiceStats
 } = require("../controller/serviceController");
 
-// Service routes
-router.post("/create", createService);
+// Public routes - users can view services
 router.get("/read", readServices);
-router.get("/stats", getServiceStats);
 router.get("/read/:id", readServiceById);
-router.patch("/update/:id", updateService);
-router.patch("/toggle/:id", toggleServiceStatus);
-router.delete("/delete/:id", deleteService);
+
+// Admin routes - only admins can modify services
+router.post("/create", authorization, isAdmin, createService);
+router.get("/stats", authorization, isAdmin, getServiceStats);
+router.patch("/update/:id", authorization, isAdmin, updateService);
+router.patch("/toggle/:id", authorization, isAdmin, toggleServiceStatus);
+router.delete("/delete/:id", authorization, isAdmin, deleteService);
 
 module.exports = router;

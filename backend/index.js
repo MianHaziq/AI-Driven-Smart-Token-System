@@ -10,6 +10,9 @@ const counterRouter = require('./routes/counter');
 const tokenRouter = require('./routes/token');
 const settingsRouter = require('./routes/settings');
 
+// Middleware
+const { sanitizeBody } = require('./middleware/validators');
+
 require('dotenv').config();
 
 const app = express();
@@ -17,6 +20,7 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(sanitizeBody); // Sanitize all incoming request bodies
 
 // Database connection
 mongoose.connect(process.env.DB_URL)

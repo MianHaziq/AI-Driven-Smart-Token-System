@@ -95,16 +95,15 @@ const AdminDashboard = () => {
 
   // Fetch data when center is selected
   useEffect(() => {
-    if (selectedCenter && selectedService) {
-      // Pass filters for service and center
+    if (selectedCenter) {
+      // Filter by city and center only - show all tokens at this center
       fetchTokens({
-        service: selectedService.id,
         city: selectedCenter.city,
         serviceCenter: selectedCenter.name
       });
       fetchCounters();
     }
-  }, [selectedCenter, selectedService, fetchTokens, fetchCounters]);
+  }, [selectedCenter, fetchTokens, fetchCounters]);
 
   // Get unique cities for selected service
   const availableCities = [...new Set(
@@ -159,9 +158,8 @@ const AdminDashboard = () => {
   const executeAction = async () => {
     setShowConfirm(false);
 
-    // Prepare filters for refreshing tokens
+    // Prepare filters for refreshing tokens (filter by city and center only)
     const filters = {
-      service: selectedService?.id,
       city: selectedCenter?.city,
       serviceCenter: selectedCenter?.name
     };
@@ -234,10 +232,9 @@ const AdminDashboard = () => {
   };
 
   const handleRefresh = async () => {
-    if (selectedCenter && selectedService) {
+    if (selectedCenter) {
       await Promise.all([
         fetchTokens({
-          service: selectedService.id,
           city: selectedCenter.city,
           serviceCenter: selectedCenter.name
         }),
@@ -245,17 +242,6 @@ const AdminDashboard = () => {
       ]);
     }
     toast.success('Dashboard refreshed');
-  };
-
-  const getPriorityConfig = (priority) => {
-    const config = {
-      normal: { color: 'bg-gray-100 text-gray-700', label: 'Normal' },
-      senior: { color: 'bg-purple-100 text-purple-700', label: 'Senior' },
-      disabled: { color: 'bg-blue-100 text-blue-700', label: 'PWD' },
-      pwd: { color: 'bg-blue-100 text-blue-700', label: 'PWD' },
-      vip: { color: 'bg-amber-100 text-amber-700', label: 'VIP' },
-    };
-    return config[priority] || config.normal;
   };
 
   const getCounterStatusConfig = (status) => {
@@ -716,7 +702,7 @@ const AdminDashboard = () => {
                                     {counter.currentToken.tokenNumber}
                                   </p>
                                   <p className="text-sm text-gray-600 mt-2">
-                                    {counter.currentToken.customer?.fullName || 'Customer'}
+                                    {counter.currentToken.customerName || counter.currentToken.customer?.fullName || 'Customer'}
                                   </p>
                                   <p className="text-xs text-gray-500">{counter.currentToken.serviceName}</p>
                                 </div>
@@ -835,14 +821,9 @@ const AdminDashboard = () => {
                               {item.tokenNumber}
                             </div>
                             <div>
-                              <div className="flex items-center gap-2">
-                                <p className="font-semibold text-gray-900">
-                                  {item.customer?.fullName || 'Customer'}
-                                </p>
-                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getPriorityConfig(item.priority).color}`}>
-                                  {getPriorityConfig(item.priority).label}
-                                </span>
-                              </div>
+                              <p className="font-semibold text-gray-900">
+                                {item.customerName || 'Customer'}
+                              </p>
                               <p className="text-sm text-gray-500">{item.serviceName || 'Service'}</p>
                             </div>
                           </div>

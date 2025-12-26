@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { FiMail, FiLock, FiArrowRight } from 'react-icons/fi';
 import { Button, Input, Alert } from '../../components/common';
@@ -8,6 +8,7 @@ import useAuthStore from '../../store/authStore';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const login = useAuthStore((state) => state.login);
@@ -39,10 +40,11 @@ const Login = () => {
         }
 
         // Normal role-based redirection
-        if (result.user.role === 'admin') {
+        if (result.user.role === 'admin' || result.user.role === 'superadmin') {
           navigate(ROUTES.ADMIN_DASHBOARD);
         } else {
-          navigate(ROUTES.CUSTOMER_DASHBOARD);
+          // Customers go to home page
+          navigate(ROUTES.HOME);
         }
       } else {
         setError(result.message);

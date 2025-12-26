@@ -4,8 +4,18 @@ const tokenSchema = new mongoose.Schema(
     {
         tokenNumber: {
             type: String,
+            required: true
+            // Note: Removed unique constraint - tokens reset daily
+            // Uniqueness is now per-day via compound index below
+        },
+        tokenDate: {
+            type: Date,
             required: true,
-            unique: true
+            default: () => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                return today;
+            }
         },
         customer: {
             type: mongoose.Schema.Types.ObjectId,
@@ -36,7 +46,7 @@ const tokenSchema = new mongoose.Schema(
         },
         priority: {
             type: String,
-            enum: ["normal", "senior", "pwd", "vip"],
+            enum: ["normal", "senior", "disabled", "vip"],
             default: "normal"
         },
         position: {
@@ -93,6 +103,10 @@ const tokenSchema = new mongoose.Schema(
 // Index for faster queries
 tokenSchema.index({ status: 1, createdAt: 1 });
 tokenSchema.index({ customer: 1, createdAt: -1 });
+tokenSchema.index({ tokenDate: 1, status: 1 }); // For daily queue queries
+
+// Compound unique index: token numbers are unique per day
+tokenSchema.index({ tokenNumber: 1, tokenDate: 1 }, { unique: true });
 
 const Token = mongoose.model("token", tokenSchema);
 module.exports = Token;

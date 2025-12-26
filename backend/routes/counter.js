@@ -1,5 +1,7 @@
 const express = require("express");
 const router = express.Router();
+const authorization = require("../middleware/authorization");
+const isAdmin = require("../middleware/isAdmin");
 const {
     createCounter,
     readCounters,
@@ -11,14 +13,14 @@ const {
     getOperators
 } = require("../controller/counterController");
 
-// Counter routes
-router.post("/create", createCounter);
-router.get("/read", readCounters);
-router.get("/stats", getCounterStats);
-router.get("/operators", getOperators);
-router.get("/read/:id", readCounterById);
-router.patch("/update/:id", updateCounter);
-router.patch("/status/:id", updateCounterStatus);
-router.delete("/delete/:id", deleteCounter);
+// All counter routes require admin access
+router.post("/create", authorization, isAdmin, createCounter);
+router.get("/read", authorization, isAdmin, readCounters);
+router.get("/stats", authorization, isAdmin, getCounterStats);
+router.get("/operators", authorization, isAdmin, getOperators);
+router.get("/read/:id", authorization, isAdmin, readCounterById);
+router.patch("/update/:id", authorization, isAdmin, updateCounter);
+router.patch("/status/:id", authorization, isAdmin, updateCounterStatus);
+router.delete("/delete/:id", authorization, isAdmin, deleteCounter);
 
 module.exports = router;

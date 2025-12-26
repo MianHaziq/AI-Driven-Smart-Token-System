@@ -1,14 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  FiCalendar,
   FiDownload,
   FiTrendingUp,
-  FiTrendingDown,
   FiClock,
   FiUsers,
   FiAlertCircle,
   FiCheckCircle,
+  FiRefreshCw,
 } from 'react-icons/fi';
 import {
   LineChart,
@@ -25,56 +24,14 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { Card, Button, Select, StatCard } from '../../components/common';
+import { Card, Button, Select, StatCard, Loader } from '../../components/common';
+import api from '../../utils/api';
+import toast from 'react-hot-toast';
 
 const Analytics = () => {
   const [dateRange, setDateRange] = useState('today');
-
-  // Mock data for charts
-  const hourlyData = [
-    { hour: '9AM', tokens: 12, avgWait: 15 },
-    { hour: '10AM', tokens: 28, avgWait: 22 },
-    { hour: '11AM', tokens: 35, avgWait: 28 },
-    { hour: '12PM', tokens: 42, avgWait: 35 },
-    { hour: '1PM', tokens: 18, avgWait: 20 },
-    { hour: '2PM', tokens: 32, avgWait: 25 },
-    { hour: '3PM', tokens: 38, avgWait: 30 },
-    { hour: '4PM', tokens: 25, avgWait: 18 },
-    { hour: '5PM', tokens: 15, avgWait: 12 },
-  ];
-
-  const weeklyData = [
-    { day: 'Mon', tokens: 145, completed: 138, noShow: 7 },
-    { day: 'Tue', tokens: 168, completed: 160, noShow: 8 },
-    { day: 'Wed', tokens: 152, completed: 145, noShow: 7 },
-    { day: 'Thu', tokens: 178, completed: 170, noShow: 8 },
-    { day: 'Fri', tokens: 190, completed: 182, noShow: 8 },
-    { day: 'Sat', tokens: 85, completed: 80, noShow: 5 },
-    { day: 'Sun', tokens: 0, completed: 0, noShow: 0 },
-  ];
-
-  const serviceDistribution = [
-    { name: 'CNIC Renewal', value: 35, color: '#01411C' },
-    { name: 'CNIC New', value: 28, color: '#006400' },
-    { name: 'CNIC Modification', value: 18, color: '#D4AF37' },
-    { name: 'Family Registration', value: 12, color: '#3B82F6' },
-    { name: 'Other', value: 7, color: '#6B7280' },
-  ];
-
-  const waitTimeDistribution = [
-    { range: '0-10 min', count: 45 },
-    { range: '10-20 min', count: 78 },
-    { range: '20-30 min', count: 52 },
-    { range: '30-45 min', count: 28 },
-    { range: '45+ min', count: 12 },
-  ];
-
-  const servicePerformance = [
-    { service: 'CNIC Renewal', tokens: 89, avgWait: 18, avgService: 12, satisfaction: 4.5 },
-    { service: 'CNIC New', tokens: 72, avgWait: 25, avgService: 18, satisfaction: 4.2 },
-    { service: 'CNIC Modification', tokens: 45, avgWait: 15, avgService: 10, satisfaction: 4.6 },
-    { service: 'Family Registration', tokens: 32, avgWait: 22, avgService: 15, satisfaction: 4.3 },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(null);
 
   const dateRangeOptions = [
     { value: 'today', label: 'Today' },
@@ -84,31 +41,55 @@ const Analytics = () => {
     { value: 'quarter', label: 'This Quarter' },
   ];
 
-  const stats = {
-    totalTokens: 245,
-    totalChange: 12,
-    avgWaitTime: 22,
-    waitChange: -8,
-    peakHour: '12:00 PM',
-    noShowRate: 4.2,
-    noShowChange: -1.5,
-    satisfaction: 4.4,
+  const fetchAnalytics = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get(`/token/analytics?range=${dateRange}`);
+      setData(response.data);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to fetch analytics');
+    } finally {
+      setLoading(false);
+    }
   };
 
+  useEffect(() => {
+    fetchAnalytics();
+  }, [dateRange]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader size="lg" />
+      </div>
+    );
+  }
+
+  const stats = data?.stats || {};
+  const hourlyData = data?.hourlyData || [];
+  const weeklyData = data?.weeklyData || [];
+  const serviceDistribution = data?.serviceDistribution || [];
+  const waitTimeDistribution = data?.waitTimeDistribution || [];
+  const servicePerformance = data?.servicePerformance || [];
+  const peakHourInsight = data?.peakHourInsight || { hour: 'N/A', tokens: 0 };
+
   return (
-    <div className="!space-y-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between !gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Analytics & Reports</h1>
           <p className="text-gray-600">Insights and performance metrics</p>
         </div>
-        <div className="flex !gap-3">
+        <div className="flex gap-3">
           <Select
             options={dateRangeOptions}
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
           />
+          <Button variant="outline" icon={FiRefreshCw} onClick={fetchAnalytics}>
+            Refresh
+          </Button>
           <Button variant="outline" icon={FiDownload}>
             Export
           </Button>
@@ -116,41 +97,41 @@ const Analytics = () => {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 !gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Tokens"
-          value={stats.totalTokens}
+          value={stats.totalTokens || 0}
           icon={FiUsers}
-          trend={stats.totalChange > 0 ? 'up' : 'down'}
-          trendValue={`${Math.abs(stats.totalChange)}%`}
+          trend={stats.totalChange >= 0 ? 'up' : 'down'}
+          trendValue={`${Math.abs(stats.totalChange || 0)}%`}
           color="green"
         />
         <StatCard
           title="Avg Wait Time"
-          value={`${stats.avgWaitTime} min`}
+          value={`${stats.avgWaitTime || 0} min`}
           icon={FiClock}
-          trend={stats.waitChange < 0 ? 'up' : 'down'}
-          trendValue={`${Math.abs(stats.waitChange)}%`}
+          trend={stats.waitChange <= 0 ? 'up' : 'down'}
+          trendValue={`${Math.abs(stats.waitChange || 0)}%`}
           color="blue"
         />
         <StatCard
           title="No-Show Rate"
-          value={`${stats.noShowRate}%`}
+          value={`${stats.noShowRate || 0}%`}
           icon={FiAlertCircle}
-          trend={stats.noShowChange < 0 ? 'up' : 'down'}
-          trendValue={`${Math.abs(stats.noShowChange)}%`}
+          trend={stats.noShowChange <= 0 ? 'up' : 'down'}
+          trendValue={`${Math.abs(stats.noShowChange || 0)}%`}
           color="amber"
         />
         <StatCard
           title="Satisfaction"
-          value={`${stats.satisfaction}/5`}
+          value={`${stats.satisfaction || 0}/5`}
           icon={FiCheckCircle}
           color="emerald"
         />
       </div>
 
       {/* Charts Row 1 */}
-      <div className="grid lg:grid-cols-2 !gap-6">
+      <div className="grid lg:grid-cols-2 gap-6">
         {/* Hourly Token Distribution */}
         <Card>
           <Card.Header>
@@ -212,36 +193,42 @@ const Analytics = () => {
       </div>
 
       {/* Charts Row 2 */}
-      <div className="grid lg:grid-cols-3 !gap-6">
+      <div className="grid lg:grid-cols-3 gap-6">
         {/* Service Distribution */}
         <Card>
           <Card.Header>
             <Card.Title>Service Distribution</Card.Title>
           </Card.Header>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={serviceDistribution}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={2}
-                  dataKey="value"
-                >
-                  {serviceDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            {serviceDistribution.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={serviceDistribution}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {serviceDistribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                No data available
+              </div>
+            )}
           </div>
-          <div className="!mt-4 !space-y-2">
+          <div className="mt-4 space-y-2">
             {serviceDistribution.map((item, index) => (
               <div key={index} className="flex items-center justify-between text-sm">
-                <div className="flex items-center !gap-2">
+                <div className="flex items-center gap-2">
                   <div
                     className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: item.color }}
@@ -320,44 +307,52 @@ const Analytics = () => {
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-left !py-3 !px-4 font-semibold text-gray-600">Service</th>
-                <th className="text-center !py-3 !px-4 font-semibold text-gray-600">Tokens</th>
-                <th className="text-center !py-3 !px-4 font-semibold text-gray-600">Avg Wait</th>
-                <th className="text-center !py-3 !px-4 font-semibold text-gray-600">Avg Service</th>
-                <th className="text-center !py-3 !px-4 font-semibold text-gray-600">Satisfaction</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-600">Service</th>
+                <th className="text-center py-3 px-4 font-semibold text-gray-600">Tokens</th>
+                <th className="text-center py-3 px-4 font-semibold text-gray-600">Avg Wait</th>
+                <th className="text-center py-3 px-4 font-semibold text-gray-600">Avg Service</th>
+                <th className="text-center py-3 px-4 font-semibold text-gray-600">Satisfaction</th>
               </tr>
             </thead>
             <tbody>
-              {servicePerformance.map((service, index) => (
-                <motion.tr
-                  key={service.service}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="border-b border-gray-100 hover:bg-gray-50"
-                >
-                  <td className="!py-4 !px-4">
-                    <span className="font-medium text-gray-900">{service.service}</span>
+              {servicePerformance.length > 0 ? (
+                servicePerformance.map((service, index) => (
+                  <motion.tr
+                    key={service.service}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="border-b border-gray-100 hover:bg-gray-50"
+                  >
+                    <td className="py-4 px-4">
+                      <span className="font-medium text-gray-900">{service.service}</span>
+                    </td>
+                    <td className="py-4 px-4 text-center">
+                      <span className="text-gray-700">{service.tokens}</span>
+                    </td>
+                    <td className="py-4 px-4 text-center">
+                      <span className={`font-medium ${service.avgWait > 20 ? 'text-amber-600' : 'text-green-600'}`}>
+                        {service.avgWait} min
+                      </span>
+                    </td>
+                    <td className="py-4 px-4 text-center">
+                      <span className="text-gray-700">{service.avgService} min</span>
+                    </td>
+                    <td className="py-4 px-4 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <span className="text-amber-500">★</span>
+                        <span className="font-medium text-gray-900">{service.satisfaction}</span>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" className="py-8 text-center text-gray-500">
+                    No service data available
                   </td>
-                  <td className="!py-4 !px-4 text-center">
-                    <span className="text-gray-700">{service.tokens}</span>
-                  </td>
-                  <td className="!py-4 !px-4 text-center">
-                    <span className={`font-medium ${service.avgWait > 20 ? 'text-amber-600' : 'text-green-600'}`}>
-                      {service.avgWait} min
-                    </span>
-                  </td>
-                  <td className="!py-4 !px-4 text-center">
-                    <span className="text-gray-700">{service.avgService} min</span>
-                  </td>
-                  <td className="!py-4 !px-4 text-center">
-                    <div className="flex items-center justify-center !gap-1">
-                      <span className="text-amber-500">★</span>
-                      <span className="font-medium text-gray-900">{service.satisfaction}</span>
-                    </div>
-                  </td>
-                </motion.tr>
-              ))}
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -365,22 +360,24 @@ const Analytics = () => {
 
       {/* Peak Hours Insight */}
       <Card className="bg-gradient-to-r from-pakistan-green-50 to-emerald-50 border-pakistan-green-200">
-        <div className="flex flex-col md:flex-row md:items-center justify-between !gap-4">
-          <div className="flex items-center !gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-pakistan-green rounded-xl flex items-center justify-center">
               <FiTrendingUp className="w-6 h-6 text-white" />
             </div>
             <div>
               <h3 className="font-semibold text-gray-900">Peak Hour Insight</h3>
               <p className="text-gray-600">
-                Busiest time today was <span className="font-bold text-pakistan-green">12:00 PM - 1:00 PM</span> with 42 tokens
+                Busiest time was <span className="font-bold text-pakistan-green">{peakHourInsight.hour}</span> with {peakHourInsight.tokens} tokens
               </p>
             </div>
           </div>
           <div className="text-right">
             <p className="text-sm text-gray-500">Recommendation</p>
             <p className="text-pakistan-green font-medium">
-              Consider adding an extra counter during lunch hours
+              {peakHourInsight.tokens > 30
+                ? 'Consider adding an extra counter during peak hours'
+                : 'Current counter capacity is sufficient'}
             </p>
           </div>
         </div>
