@@ -9,6 +9,7 @@ const useTokenStore = create((set, get) => ({
   queueStats: null,
   dashboardStats: null,
   queueCounts: {},
+  testModeEnabled: false,
   isLoading: false,
   error: null,
 
@@ -290,6 +291,50 @@ const useTokenStore = create((set, get) => ({
       return { success: true, data: response.data };
     } catch (error) {
       return { success: false, message: error.response?.data?.message };
+    }
+  },
+
+  // Calculate distance to center using Google Maps API
+  calculateDistance: async (userLocation, centerLocation) => {
+    try {
+      const response = await api.post('/token/calculate-distance', {
+        userLocation,
+        centerLocation
+      });
+      return {
+        success: true,
+        source: response.data.source,
+        distance: response.data.distance,
+        duration: response.data.duration,
+        isGoogleMapsConfigured: response.data.isGoogleMapsConfigured
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to calculate distance'
+      };
+    }
+  },
+
+  // Fetch test mode status
+  fetchTestModeStatus: async () => {
+    try {
+      const response = await api.get('/settings/test-mode');
+      set({ testModeEnabled: response.data.testModeEnabled || false });
+      return { success: true, testModeEnabled: response.data.testModeEnabled };
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message };
+    }
+  },
+
+  // Toggle test mode (admin only)
+  toggleTestMode: async () => {
+    try {
+      const response = await api.post('/settings/toggle-test-mode');
+      set({ testModeEnabled: response.data.testModeEnabled });
+      return { success: true, testModeEnabled: response.data.testModeEnabled, message: response.data.message };
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || 'Failed to toggle test mode' };
     }
   },
 

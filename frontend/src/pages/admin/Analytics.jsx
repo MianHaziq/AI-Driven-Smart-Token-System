@@ -130,67 +130,6 @@ const Analytics = () => {
         />
       </div>
 
-      {/* Charts Row 1 */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Hourly Token Distribution */}
-        <Card>
-          <Card.Header>
-            <Card.Title subtitle="Token volume by hour">
-              Hourly Distribution
-            </Card.Title>
-          </Card.Header>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={hourlyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="hour" stroke="#6b7280" fontSize={12} />
-                <YAxis stroke="#6b7280" fontSize={12} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#fff',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                  }}
-                />
-                <Bar dataKey="tokens" fill="#01411C" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        {/* Wait Time Trend */}
-        <Card>
-          <Card.Header>
-            <Card.Title subtitle="Average wait time throughout the day">
-              Wait Time Trend
-            </Card.Title>
-          </Card.Header>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={hourlyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="hour" stroke="#6b7280" fontSize={12} />
-                <YAxis stroke="#6b7280" fontSize={12} unit=" min" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#fff',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="avgWait"
-                  stroke="#D4AF37"
-                  strokeWidth={3}
-                  dot={{ fill: '#D4AF37', strokeWidth: 2 }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      </div>
 
       {/* Charts Row 2 */}
       <div className="grid lg:grid-cols-3 gap-6">

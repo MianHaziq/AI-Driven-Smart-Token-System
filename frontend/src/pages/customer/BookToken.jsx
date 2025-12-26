@@ -47,35 +47,16 @@ const serviceIconMap = {
   FiDollarSign: FiDollarSign,
 };
 
-// Helper: Calculate distance using Haversine formula
-const calculateDistance = (lat1, lng1, lat2, lng2) => {
-  const R = 6371; // Earth's radius in kilometers
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLng / 2) * Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-};
-
-// Helper: Estimate travel time (25 km/h average city speed)
-const estimateTravelTime = (distanceKm) => {
-  const avgSpeedKmPerHour = 25;
-  return Math.ceil((distanceKm / avgSpeedKmPerHour) * 60);
-};
-
-// Constants
+// Constants for distance validation
+// Formula: travelTime <= max(queueWaitTime, MIN_TRAVEL_TIME) + BUFFER_TIME
 const MIN_TRAVEL_TIME = 15; // Minimum allowed travel time (even when queue is empty)
 const BUFFER_TIME = 5; // Extra buffer time
-// Formula: travelTime <= max(queueWaitTime, MIN_TRAVEL_TIME) + BUFFER_TIME
 
 const BookToken = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated } = useAuthStore();
-  const { bookToken } = useTokenStore();
+  const { bookToken, calculateDistance, fetchTestModeStatus, testModeEnabled } = useTokenStore();
 
   const preSelectedService = location.state;
 
@@ -96,6 +77,12 @@ const BookToken = () => {
   const [locationError, setLocationError] = useState(null);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [distanceInfo, setDistanceInfo] = useState(null);
+  const [calculatingDistance, setCalculatingDistance] = useState(false);
+
+  // Fetch test mode status on mount
+  useEffect(() => {
+    fetchTestModeStatus();
+  }, [fetchTestModeStatus]);
 
   // Load centers and fetch real queue counts from API
   useEffect(() => {
@@ -210,32 +197,49 @@ const BookToken = () => {
   }, [enableLocation, userLocation, gettingLocation]);
 
   // Calculate distance when center is selected and user location is available
+  // Uses Google Maps API for accurate road distance and travel time
   // Formula: travelTime <= max(queueWaitTime, MIN_TRAVEL_TIME) + BUFFER_TIME
   useEffect(() => {
-    if (selectedCenter && userLocation && selectedCenter.coordinates) {
-      const distance = calculateDistance(
-        userLocation.lat,
-        userLocation.lng,
-        selectedCenter.coordinates.lat,
-        selectedCenter.coordinates.lng
-      );
-      const travelTime = estimateTravelTime(distance);
-      const queueWaitTime = selectedCenter.avgWaitTime || 0;
-      const baseTime = Math.max(queueWaitTime, MIN_TRAVEL_TIME);
-      const maxAllowedTravelTime = baseTime + BUFFER_TIME;
-      const canReach = travelTime <= maxAllowedTravelTime;
+    const fetchDistance = async () => {
+      if (selectedCenter && userLocation && selectedCenter.coordinates) {
+        setCalculatingDistance(true);
 
-      setDistanceInfo({
-        distance: Math.round(distance * 10) / 10,
-        travelTime,
-        canReach,
-        queueWaitTime,
-        maxAllowedTravelTime
-      });
-    } else {
-      setDistanceInfo(null);
-    }
-  }, [selectedCenter, userLocation]);
+        const result = await calculateDistance(
+          { lat: userLocation.lat, lng: userLocation.lng },
+          { lat: selectedCenter.coordinates.lat, lng: selectedCenter.coordinates.lng }
+        );
+
+        if (result.success) {
+          const distance = result.distance.km;
+          const travelTime = result.duration.minutes;
+          const queueWaitTime = selectedCenter.avgWaitTime || 0;
+          const baseTime = Math.max(queueWaitTime, MIN_TRAVEL_TIME);
+          const maxAllowedTravelTime = baseTime + BUFFER_TIME;
+          const canReach = travelTime <= maxAllowedTravelTime;
+
+          setDistanceInfo({
+            distance,
+            travelTime,
+            canReach,
+            queueWaitTime,
+            maxAllowedTravelTime,
+            source: result.source, // 'google_maps' or 'fallback'
+            distanceText: result.distance.text,
+            durationText: result.duration.text
+          });
+        } else {
+          console.error('Failed to calculate distance:', result.message);
+          setDistanceInfo(null);
+        }
+
+        setCalculatingDistance(false);
+      } else {
+        setDistanceInfo(null);
+      }
+    };
+
+    fetchDistance();
+  }, [selectedCenter, userLocation, calculateDistance]);
 
   // Filter centers by city and service category
   const filteredCenters = centers.filter((center) => {
@@ -292,14 +296,32 @@ const BookToken = () => {
       return;
     }
 
-    // Validate location if enabled
-    // Formula: travelTime <= max(queueWaitTime, MIN_TRAVEL_TIME) + BUFFER_TIME
-    if (enableLocation && distanceInfo && !distanceInfo.canReach) {
-      toast.error(
-        `You are too far from the center. Your travel time (${distanceInfo.travelTime} min) exceeds the maximum allowed (${distanceInfo.maxAllowedTravelTime} min).`,
-        { duration: 5000, icon: '📍' }
-      );
-      return;
+    // Fetch latest test mode status before validating
+    const testModeResult = await fetchTestModeStatus();
+    const isTestMode = testModeResult?.testModeEnabled || testModeEnabled;
+
+    // In test mode, skip ALL location/distance validation
+    if (!isTestMode) {
+      // Validate location only if NOT in test mode
+      // Formula: travelTime <= max(queueWaitTime, MIN_TRAVEL_TIME) + BUFFER_TIME
+      if (enableLocation && distanceInfo && !distanceInfo.canReach) {
+        toast.error(
+          `You are too far from the center. Your travel time (${distanceInfo.travelTime} min) exceeds the maximum allowed (${distanceInfo.maxAllowedTravelTime} min).`,
+          { duration: 5000, icon: '📍' }
+        );
+        return;
+      }
+    } else if (enableLocation && distanceInfo && !distanceInfo.canReach) {
+      // In test mode, show warning but continue
+      toast('TEST MODE: Distance validation skipped. You can book from any location.', {
+        icon: '🧪',
+        duration: 4000,
+        style: {
+          background: '#DBEAFE',
+          color: '#1E40AF',
+          border: '1px solid #3B82F6'
+        }
+      });
     }
 
     if (!isAuthenticated) {
@@ -359,6 +381,22 @@ const BookToken = () => {
           icon: '🎫',
           duration: 4000,
         });
+
+        // Show test mode warning if location validation was skipped
+        if (result.locationValidationSkipped) {
+          setTimeout(() => {
+            toast('TEST MODE: You booked from a distance that normally would not be allowed. This is for testing only.', {
+              icon: '🧪',
+              duration: 6000,
+              style: {
+                background: '#DBEAFE',
+                color: '#1E40AF',
+                border: '1px solid #3B82F6'
+              }
+            });
+          }, 500);
+        }
+
         // Show warning about arriving on time
         setTimeout(() => {
           toast('Please arrive on time! Your token will be cancelled if you don\'t arrive within 5 minutes of being called.', {
@@ -370,7 +408,7 @@ const BookToken = () => {
               border: '1px solid #F59E0B'
             }
           });
-        }, 500);
+        }, result.locationValidationSkipped ? 1000 : 500);
       } else {
         toast.error(result.message || 'Booking failed. Please try again.');
       }
